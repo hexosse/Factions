@@ -8,9 +8,9 @@ import com.massivecraft.factions.Const;
 import com.massivecraft.factions.Perm;
 import com.massivecraft.factions.entity.BoardColl;
 import com.massivecraft.massivecore.MassiveException;
-import com.massivecraft.massivecore.cmd.arg.ARBoolean;
-import com.massivecraft.massivecore.cmd.req.ReqHasPerm;
-import com.massivecraft.massivecore.cmd.req.ReqIsPlayer;
+import com.massivecraft.massivecore.command.requirement.RequirementHasPerm;
+import com.massivecraft.massivecore.command.requirement.RequirementIsPlayer;
+import com.massivecraft.massivecore.command.type.primitive.TypeBoolean;
 import com.massivecraft.massivecore.ps.PS;
 
 public class CmdFactionsMap extends FactionsCommand
@@ -24,12 +24,12 @@ public class CmdFactionsMap extends FactionsCommand
 		// Aliases
 		this.addAliases("map");
 
-		// Args
-		this.addArg(ARBoolean.get(), "on/off", "once");
+		// Parameters
+		this.addParameter(TypeBoolean.getOn(), "on/off", "once");
 
 		// Requirements
-		this.addRequirements(ReqHasPerm.get(Perm.MAP.node));
-		this.addRequirements(ReqIsPlayer.get());
+		this.addRequirements(RequirementHasPerm.get(Perm.MAP.node));
+		this.addRequirements(RequirementIsPlayer.get());
 	}
 
 	// -------------------------------------------- //
@@ -65,8 +65,8 @@ public class CmdFactionsMap extends FactionsCommand
 	public void showMap(int width, int height)
 	{
 		Location location = me.getLocation();
-		List<String> message = BoardColl.get().getMap(msenderFaction, PS.valueOf(location), location.getYaw(), width, height);
-		sendMessage(message);
+		List<Object> message = BoardColl.get().getMap(msenderFaction, PS.valueOf(location), location.getYaw(), width, height);
+		message(message);
 	}
 	
 }

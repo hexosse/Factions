@@ -5,14 +5,13 @@ import java.util.Collection;
 import java.util.List;
 
 import com.massivecraft.factions.Perm;
-import com.massivecraft.factions.cmd.arg.ARFaction;
-import com.massivecraft.factions.cmd.arg.ARMFlag;
+import com.massivecraft.factions.cmd.type.TypeFaction;
+import com.massivecraft.factions.cmd.type.TypeMFlag;
 import com.massivecraft.factions.entity.Faction;
 import com.massivecraft.factions.entity.MFlag;
 import com.massivecraft.massivecore.MassiveException;
-import com.massivecraft.massivecore.cmd.arg.ARAll;
-import com.massivecraft.massivecore.cmd.arg.ARSet;
-import com.massivecraft.massivecore.cmd.req.ReqHasPerm;
+import com.massivecraft.massivecore.command.requirement.RequirementHasPerm;
+import com.massivecraft.massivecore.command.type.container.TypeSet;
 import com.massivecraft.massivecore.util.Txt;
 
 public class CmdFactionsFlagShow extends FactionsCommand
@@ -24,14 +23,14 @@ public class CmdFactionsFlagShow extends FactionsCommand
 	public CmdFactionsFlagShow()
 	{
 		// Aliases
-		this.addAliases("s", "show");
+		this.addAliases("show");
 		
-		// Args
-		this.addArg(ARFaction.get(), "faction", "you");
-		this.addArg(ARAll.get(ARSet.get(ARMFlag.get(), false)), "flags", "all", true);
+		// Parameters
+		this.addParameter(TypeFaction.get(), "faction", "you");
+		this.addParameter(TypeSet.get(TypeMFlag.get()), "flags", "all", true);
 		
 		// Requirements
-		this.addRequirements(ReqHasPerm.get(Perm.FLAG_SHOW.node));
+		this.addRequirements(RequirementHasPerm.get(Perm.FLAG_SHOW.node));
 	}
 	
 	// -------------------------------------------- //
@@ -46,7 +45,7 @@ public class CmdFactionsFlagShow extends FactionsCommand
 		Collection<MFlag> mflags = this.readArg(MFlag.getAll());
 		
 		// Create messages
-		List<String> messages = new ArrayList<String>();
+		List<Object> messages = new ArrayList<>();
 		messages.add(Txt.titleize("Flag for " + faction.describeTo(msender, true)));
 		for (MFlag mflag : mflags)
 		{
@@ -54,7 +53,7 @@ public class CmdFactionsFlagShow extends FactionsCommand
 		}
 
 		// Send messages
-		sendMessage(messages);
+		message(messages);
 	}
 	
 }

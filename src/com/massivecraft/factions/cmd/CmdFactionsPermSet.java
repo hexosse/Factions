@@ -5,15 +5,16 @@ import java.util.List;
 
 import com.massivecraft.factions.Perm;
 import com.massivecraft.factions.Rel;
-import com.massivecraft.factions.cmd.arg.ARFaction;
-import com.massivecraft.factions.cmd.arg.ARMPerm;
-import com.massivecraft.factions.cmd.arg.ARRel;
+import com.massivecraft.factions.cmd.type.TypeFaction;
+import com.massivecraft.factions.cmd.type.TypeMPerm;
+import com.massivecraft.factions.cmd.type.TypeRel;
 import com.massivecraft.factions.entity.Faction;
 import com.massivecraft.factions.entity.MPerm;
 import com.massivecraft.factions.entity.MPlayer;
+import com.massivecraft.factions.event.EventFactionsPermChange;
 import com.massivecraft.massivecore.MassiveException;
-import com.massivecraft.massivecore.cmd.arg.ARBoolean;
-import com.massivecraft.massivecore.cmd.req.ReqHasPerm;
+import com.massivecraft.massivecore.command.requirement.RequirementHasPerm;
+import com.massivecraft.massivecore.command.type.primitive.TypeBoolean;
 import com.massivecraft.massivecore.util.Txt;
 
 public class CmdFactionsPermSet extends FactionsCommand
@@ -27,14 +28,14 @@ public class CmdFactionsPermSet extends FactionsCommand
 		// Aliases
 		this.addAliases("set");
 		
-		// Args
-		this.addArg(ARMPerm.get(), "perm");
-		this.addArg(ARRel.get(), "relation");
-		this.addArg(ARBoolean.get(), "yes/no");
-		this.addArg(ARFaction.get(), "faction", "you");
+		// Parameters
+		this.addParameter(TypeMPerm.get(), "perm");
+		this.addParameter(TypeRel.get(), "relation");
+		this.addParameter(TypeBoolean.getYes(), "yes/no");
+		this.addParameter(TypeFaction.get(), "faction", "you");
 		
 		// Requirements
-		this.addRequirements(ReqHasPerm.get(Perm.PERM_SET.node));
+		this.addRequirements(RequirementHasPerm.get(Perm.PERM_SET.node));
 	}
 
 	// -------------------------------------------- //
@@ -54,11 +55,17 @@ public class CmdFactionsPermSet extends FactionsCommand
 		if ( ! MPerm.getPermPerms().has(msender, faction, true)) return;
 		
 		// Is this perm editable?
-		if ( ! msender.isUsingAdminMode() && ! perm.isEditable())
+		if ( ! msender.isOverriding() && ! perm.isEditable())
 		{
 			msg("<b>The perm <h>%s <b>is not editable.", perm.getName());
 			return;
 		}
+		
+		// Event
+		EventFactionsPermChange event = new EventFactionsPermChange(sender, faction, perm, rel, value);
+		event.run();
+		if (event.isCancelled()) return;
+		value = event.getNewValue();
 		
 		// No change
 		if (faction.getPermitted(perm).contains(rel) == value)
@@ -77,13 +84,13 @@ public class CmdFactionsPermSet extends FactionsCommand
 		}
 		
 		// Create messages
-		List<String> messages = new ArrayList<String>();
+		List<Object> messages = new ArrayList<>();
 		
 		// Inform sender
 		messages.add(Txt.titleize("Perm for " + faction.describeTo(msender, true)));
 		messages.add(MPerm.getStateHeaders());
 		messages.add(Txt.parse(perm.getStateInfo(faction.getPermitted(perm), true)));
-		sendMessage(messages);
+		message(messages);
 		
 		// Inform faction (their message is slighly different)
 		List<MPlayer> recipients = faction.getMPlayers();
@@ -91,8 +98,8 @@ public class CmdFactionsPermSet extends FactionsCommand
 		
 		for (MPlayer recipient : recipients)
 		{
-			messages.add(0, Txt.parse("<h>%s <i>set a perm for <h>%s<i>.", msender.describeTo(recipient, true), faction.describeTo(recipient, true)));
-			recipient.sendMessage(messages);
+			recipient.msg("<h>%s <i>set a perm for <h>%s<i>.", msender.describeTo(recipient, true), faction.describeTo(recipient, true));
+			recipient.message(messages);
 		}
 	}
 	

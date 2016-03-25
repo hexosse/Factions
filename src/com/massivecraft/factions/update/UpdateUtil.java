@@ -17,6 +17,7 @@ import com.massivecraft.factions.entity.MConf;
 import com.massivecraft.massivecore.MassiveCore;
 import com.massivecraft.massivecore.store.Coll;
 import com.massivecraft.massivecore.store.Db;
+import com.massivecraft.massivecore.store.Entity;
 import com.massivecraft.massivecore.store.MStore;
 import com.massivecraft.massivecore.util.MUtil;
 
@@ -47,7 +48,7 @@ public class UpdateUtil
 		Factions.get().log("Updating Database to New Version!");
 		
 		// ... load the old uconf data ...
-		OldConfColls.get().init();
+		OldConfColls.get().setActive(true);
 		OldConf oldConf = OldConfColls.get().getForUniverse(universe).get(MassiveCore.INSTANCE, true);
 		
 		// ... transfer the old uconf data over to the new mconf ...
@@ -100,9 +101,10 @@ public class UpdateUtil
 		return ret;
 	}
 	
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static int getUniverseFactionCount(String universe)
 	{
-		Coll<Object> coll = new Coll<Object>("factions_faction@"+universe, Object.class, MStore.getDb(), Factions.get());
+		Coll coll = new Coll("factions_faction@"+universe, Entity.class, MStore.getDb(), Factions.get());
 		
 		Collection<String> ids = MStore.getDb().getIds(coll);
 		

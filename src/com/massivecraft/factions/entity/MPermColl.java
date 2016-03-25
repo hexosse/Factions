@@ -5,7 +5,6 @@ import java.util.List;
 
 import com.massivecraft.factions.Const;
 import com.massivecraft.factions.Factions;
-import com.massivecraft.massivecore.PriorityComparator;
 import com.massivecraft.massivecore.store.Coll;
 import com.massivecraft.massivecore.store.MStore;
 
@@ -19,7 +18,8 @@ public class MPermColl extends Coll<MPerm>
 	public static MPermColl get() { return i; }
 	private MPermColl()
 	{
-		super(Const.COLLECTION_MPERM, MPerm.class, MStore.getDb(), Factions.get(), false, true, null, PriorityComparator.get());
+		super(Const.COLLECTION_MPERM, MPerm.class, MStore.getDb(), Factions.get());
+		this.setLowercasing(true);
 	}
 
 	// -------------------------------------------- //
@@ -37,9 +37,10 @@ public class MPermColl extends Coll<MPerm>
 	// -------------------------------------------- //
 	
 	@Override
-	public void init()
+	public void setActive(boolean active)
 	{
-		super.init();
+		super.setActive(active);
+		if ( ! active) return;
 		MPerm.setupStandardPerms();
 	}
 	

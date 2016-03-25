@@ -18,13 +18,16 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Enderman;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Wither;
+import org.bukkit.entity.Zombie;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -32,25 +35,28 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockBurnEvent;
 import org.bukkit.event.block.BlockDamageEvent;
+import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.block.BlockIgniteEvent;
+import org.bukkit.event.block.BlockIgniteEvent.IgniteCause;
 import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.BlockSpreadEvent;
-import org.bukkit.event.block.BlockIgniteEvent.IgniteCause;
 import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
+import org.bukkit.event.entity.EntityBreakDoorEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityCombustByEntityEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.PotionSplashEvent;
-import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.event.hanging.HangingBreakByEntityEvent;
 import org.bukkit.event.hanging.HangingBreakEvent;
-import org.bukkit.event.hanging.HangingPlaceEvent;
 import org.bukkit.event.hanging.HangingBreakEvent.RemoveCause;
+import org.bukkit.event.hanging.HangingPlaceEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerBucketFillEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
@@ -60,7 +66,6 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.projectiles.ProjectileSource;
 
 import com.massivecraft.factions.Const;
@@ -68,25 +73,27 @@ import com.massivecraft.factions.Factions;
 import com.massivecraft.factions.PlayerRoleComparator;
 import com.massivecraft.factions.Rel;
 import com.massivecraft.factions.TerritoryAccess;
+import com.massivecraft.factions.entity.Board;
 import com.massivecraft.factions.entity.BoardColl;
+import com.massivecraft.factions.entity.Faction;
 import com.massivecraft.factions.entity.FactionColl;
+import com.massivecraft.factions.entity.MConf;
 import com.massivecraft.factions.entity.MFlag;
 import com.massivecraft.factions.entity.MPerm;
 import com.massivecraft.factions.entity.MPlayer;
-import com.massivecraft.factions.entity.Faction;
-import com.massivecraft.factions.entity.MConf;
 import com.massivecraft.factions.entity.MPlayerColl;
 import com.massivecraft.factions.event.EventFactionsChunkChangeType;
 import com.massivecraft.factions.event.EventFactionsChunksChange;
 import com.massivecraft.factions.event.EventFactionsFactionShowAsync;
-import com.massivecraft.factions.event.EventFactionsPvpDisallowed;
 import com.massivecraft.factions.event.EventFactionsPowerChange;
 import com.massivecraft.factions.event.EventFactionsPowerChange.PowerChangeReason;
+import com.massivecraft.factions.event.EventFactionsPvpDisallowed;
 import com.massivecraft.factions.integration.Econ;
-import com.massivecraft.factions.spigot.SpigotFeatures;
+import com.massivecraft.factions.integration.spigot.IntegrationSpigot;
 import com.massivecraft.factions.util.VisualizeUtil;
-import com.massivecraft.massivecore.EngineAbstract;
+import com.massivecraft.massivecore.Engine;
 import com.massivecraft.massivecore.PriorityLines;
+import com.massivecraft.massivecore.collections.MassiveSet;
 import com.massivecraft.massivecore.event.EventMassiveCorePlayerLeave;
 import com.massivecraft.massivecore.mixin.Mixin;
 import com.massivecraft.massivecore.money.Money;
@@ -97,7 +104,7 @@ import com.massivecraft.massivecore.util.TimeDiffUtil;
 import com.massivecraft.massivecore.util.TimeUnit;
 import com.massivecraft.massivecore.util.Txt;
 
-public class EngineMain extends EngineAbstract
+public class EngineMain extends Engine
 {
 	// -------------------------------------------- //
 	// INSTANCE & CONSTRUCT
@@ -105,17 +112,19 @@ public class EngineMain extends EngineAbstract
 	
 	private static EngineMain i = new EngineMain();
 	public static EngineMain get() { return i; }
-	public EngineMain() {}
 	
 	// -------------------------------------------- //
-	// OVERRIDE
+	// CONSTANTS
 	// -------------------------------------------- //
 	
-	@Override
-	public Plugin getPlugin()
-	{
-		return Factions.get();
-	}
+	public static final Set<SpawnReason> NATURAL_SPAWN_REASONS = new MassiveSet<SpawnReason>(
+		SpawnReason.NATURAL,
+		SpawnReason.JOCKEY,
+		SpawnReason.CHUNK_GEN,
+		SpawnReason.OCELOT_BABY,
+		SpawnReason.NETHER_PORTAL,
+		SpawnReason.MOUNT
+	);
 	
 	// -------------------------------------------- //
 	// FACTION SHOW
@@ -126,14 +135,14 @@ public class EngineMain extends EngineAbstract
 	{
 		final int tableCols = 4;
 		final CommandSender sender = event.getSender();
-		final MPlayer msender = event.getMSender();
+		final MPlayer mplayer = event.getMPlayer();
 		final Faction faction = event.getFaction();
 		final boolean normal = faction.isNormal();
 		final Map<String, PriorityLines> idPriorityLiness = event.getIdPriorityLiness();
-		final boolean peaceful = faction.getFlag(MFlag.getFlagPeaceful());
+		String none = Txt.parse("<silver><italic>none");
 		
 		// ID
-		if (msender.isUsingAdminMode())
+		if (mplayer.isOverriding())
 		{
 			show(idPriorityLiness, Const.SHOW_ID_FACTION_ID, Const.SHOW_PRIORITY_FACTION_ID, "ID", faction.getId());
 		}
@@ -215,37 +224,7 @@ public class EngineMain extends EngineAbstract
 				}
 			}
 		}
-		
-		// RELATIONS
-		List<String> relationLines = new ArrayList<String>();
-		String none = Txt.parse("<silver><italic>none");
-		String everyone = MConf.get().colorTruce.toString() + Txt.parse("<italic>*EVERYONE*");
-		Set<Rel> rels = EnumSet.of(Rel.TRUCE, Rel.ALLY, Rel.ENEMY);
-		Map<Rel, List<String>> relNames = faction.getRelationNames(msender, rels, true);
-		for (Entry<Rel, List<String>> entry : relNames.entrySet())
-		{
-			Rel rel = entry.getKey();
-			List<String> names = entry.getValue();
-			String header = Txt.parse("<a>Relation %s%s<a> (%d):", rel.getColor().toString(), Txt.getNicedEnum(rel), names.size());
-			relationLines.add(header);
-			if (rel == Rel.TRUCE && peaceful)
-			{
-				relationLines.add(everyone);
-			}
-			else
-			{
-				if (names.isEmpty())
-				{
-					relationLines.add(none);
-				}
-				else
-				{
-					relationLines.addAll(table(names, tableCols));
-				}
-			}
-		}
-		idPriorityLiness.put(Const.SHOW_ID_FACTION_RELATIONS, new PriorityLines(Const.SHOW_PRIORITY_FACTION_RELATIONS, relationLines));
-		
+
 		// FOLLOWERS
 		List<String> followerLines = new ArrayList<String>();
 		
@@ -256,14 +235,14 @@ public class EngineMain extends EngineAbstract
 		Collections.sort(followers, PlayerRoleComparator.get());
 		for (MPlayer follower : followers)
 		{
-			if (follower.isOnline() && Mixin.canSee(sender, follower.getId()))
+			if (follower.isOnline(sender))
 			{
-				followerNamesOnline.add(follower.getNameAndTitle(msender));
+				followerNamesOnline.add(follower.getNameAndTitle(mplayer));
 			}
 			else if (normal)
 			{
 				// For the non-faction we skip the offline members since they are far to many (infinite almost)
-				followerNamesOffline.add(follower.getNameAndTitle(msender));
+				followerNamesOffline.add(follower.getNameAndTitle(mplayer));
 			}
 		}
 		
@@ -405,7 +384,7 @@ public class EngineMain extends EngineAbstract
 		if (!Mixin.isActualJoin(event)) return;
 		
 		// ... then prepare the messages ...
-		final List<String> messages = faction.getMotdMessages();
+		final List<Object> messages = faction.getMotdMessages();
 		
 		// ... and send to the player.
 		if (MConf.get().motdDelayTicks < 0)
@@ -489,14 +468,14 @@ public class EngineMain extends EngineAbstract
 	public void onChunksChangeInner(EventFactionsChunksChange event)
 	{
 		// Args
-		final MPlayer msender = event.getMSender();
+		final MPlayer mplayer = event.getMPlayer();
 		final Faction newFaction = event.getNewFaction();
 		final Map<Faction, Set<PS>> currentFactionChunks = event.getOldFactionChunks();
 		final Set<Faction> currentFactions = currentFactionChunks.keySet();
 		final Set<PS> chunks = event.getChunks();
 		
-		// Admin Mode? Sure!
-		if (msender.isUsingAdminMode()) return;
+		// Override Mode? Sure!
+		if (mplayer.isOverriding()) return;
 		
 		// CALC: Is there at least one normal faction among the current ones?
 		boolean currentFactionsContainsAtLeastOneNormal = false;
@@ -519,14 +498,14 @@ public class EngineMain extends EngineAbstract
 				if ( ! MConf.get().worldsClaimingEnabled.contains(worldId))
 				{
 					String worldName = Mixin.getWorldDisplayName(worldId);
-					msender.msg("<b>Land claiming is disabled in <h>%s<b>.", worldName);
+					mplayer.msg("<b>Land claiming is disabled in <h>%s<b>.", worldName);
 					event.setCancelled(true);
 					return;
 				}
 			}
 			
 			// ... ensure we have permission to alter the territory of the new faction ...
-			if ( ! MPerm.getPermTerritory().has(msender, newFaction, true))
+			if ( ! MPerm.getPermTerritory().has(mplayer, newFaction, true))
 			{
 				// NOTE: No need to send a message. We send message from the permission check itself.
 				event.setCancelled(true);
@@ -536,7 +515,7 @@ public class EngineMain extends EngineAbstract
 			// ... ensure the new faction has enough players to claim ...
 			if (newFaction.getMPlayers().size() < MConf.get().claimsRequireMinFactionMembers)
 			{
-				msender.msg("<b>Factions must have at least <h>%s<b> members to claim land.", MConf.get().claimsRequireMinFactionMembers);
+				mplayer.msg("<b>Factions must have at least <h>%s<b> members to claim land.", MConf.get().claimsRequireMinFactionMembers);
 				event.setCancelled(true);
 				return;
 			}
@@ -545,7 +524,7 @@ public class EngineMain extends EngineAbstract
 			int ownedLand = newFaction.getLandCount();
 			if (MConf.get().claimedLandsMax != 0 && ownedLand + chunks.size() > MConf.get().claimedLandsMax && ! newFaction.getFlag(MFlag.getFlagInfpower()))
 			{
-				msender.msg("<b>Limit reached. You can't claim more land.");
+				mplayer.msg("<b>Limit reached. You can't claim more land.");
 				event.setCancelled(true);
 				return;
 			}
@@ -553,7 +532,7 @@ public class EngineMain extends EngineAbstract
 			// ... ensure the claim would not bypass the faction power ...
 			if (ownedLand + chunks.size() > newFaction.getPowerRounded())
 			{
-				msender.msg("<b>You don't have enough power to claim that land.");
+				mplayer.msg("<b>You don't have enough power to claim that land.");
 				event.setCancelled(true);
 				return;
 			}
@@ -571,7 +550,7 @@ public class EngineMain extends EngineAbstract
 			for (Faction nearbyFaction : nearbyFactions)
 			{
 				if (claimnear.has(newFaction, nearbyFaction)) continue;
-				msender.sendMessage(claimnear.createDeniedMessage(msender, nearbyFaction));
+				mplayer.message(claimnear.createDeniedMessage(mplayer, nearbyFaction));
 				event.setCancelled(true);
 				return;
 			}
@@ -594,11 +573,11 @@ public class EngineMain extends EngineAbstract
 			{
 				if (MConf.get().claimsCanBeUnconnectedIfOwnedByOtherFaction)
 				{
-					msender.msg("<b>You can only claim additional land which is connected to your first claim or controlled by another faction!");
+					mplayer.msg("<b>You can only claim additional land which is connected to your first claim or controlled by another faction!");
 				}
 				else
 				{
-					msender.msg("<b>You can only claim additional land which is connected to your first claim!");
+					mplayer.msg("<b>You can only claim additional land which is connected to your first claim!");
 				}
 				event.setCancelled(true);
 				return;
@@ -614,15 +593,15 @@ public class EngineMain extends EngineAbstract
 			// ... that is an actual faction ...
 			if (oldFaction.isNone()) continue;
 			
-			// ... for which the msender lacks permission ...
-			if (MPerm.getPermTerritory().has(msender, oldFaction, false)) continue;
+			// ... for which the mplayer lacks permission ...
+			if (MPerm.getPermTerritory().has(mplayer, oldFaction, false)) continue;
 			
 			// ... consider all reasons to forbid "overclaiming/warclaiming" ...
 			
 			// ... claiming from others may be forbidden ...
 			if ( ! MConf.get().claimingFromOthersAllowed)
 			{
-				msender.msg("<b>You may not claim land from others.");
+				mplayer.msg("<b>You may not claim land from others.");
 				event.setCancelled(true);
 				return;
 			}
@@ -630,7 +609,7 @@ public class EngineMain extends EngineAbstract
 			// ... the relation may forbid ...
 			if (oldFaction.getRelationTo(newFaction).isAtLeast(Rel.TRUCE))
 			{
-				msender.msg("<b>You can't claim this land due to your relation with the current owner.");
+				mplayer.msg("<b>You can't claim this land due to your relation with the current owner.");
 				event.setCancelled(true);
 				return;
 			}
@@ -638,7 +617,7 @@ public class EngineMain extends EngineAbstract
 			// ... the old faction might not be inflated enough ...
 			if (oldFaction.getPowerRounded() > oldFaction.getLandCount() - oldChunks.size())
 			{
-				msender.msg("%s<i> owns this land and is strong enough to keep it.", oldFaction.getName(msender));
+				mplayer.msg("%s<i> owns this land and is strong enough to keep it.", oldFaction.getName(mplayer));
 				event.setCancelled(true);
 				return;
 			}
@@ -646,7 +625,7 @@ public class EngineMain extends EngineAbstract
 			// ... and you might be trying to claim without starting at the border ...
 			if ( ! BoardColl.get().isAnyBorderPs(chunks))
 			{
-				msender.msg("<b>You must start claiming land at the border of the territory.");
+				mplayer.msg("<b>You must start claiming land at the border of the territory.");
 				event.setCancelled(true);
 				return;
 			}
@@ -690,16 +669,16 @@ public class EngineMain extends EngineAbstract
 		// send host faction info updates
 		if (mplayer.isMapAutoUpdating())
 		{
-			List<String> message = BoardColl.get().getMap(mplayer, chunkTo, player.getLocation().getYaw(), Const.MAP_WIDTH, Const.MAP_HEIGHT);
-			mplayer.sendMessage(message);
+			List<Object> message = BoardColl.get().getMap(mplayer, chunkTo, player.getLocation().getYaw(), Const.MAP_WIDTH, Const.MAP_HEIGHT);
+			mplayer.message(message);
 		}
 		else if (factionFrom != factionTo)
 		{
-			if (this.isTerritoryInfoUsingScreen())
+			if (mplayer.isTerritoryInfoTitles())
 			{
-				String maintitle = parseTerritoryInfo(MConf.get().territoryInfoScreenMaintitle, mplayer, factionTo);
-				String subtitle = parseTerritoryInfo(MConf.get().territoryInfoScreenSubtitle, mplayer, factionTo);
-				Mixin.sendTitleMessage(player, MConf.get().territoryInfoScreenTicksIn, MConf.get().territoryInfoScreenTicksStay, MConf.get().territoryInfoScreenTicksOut, maintitle, subtitle);
+				String maintitle = parseTerritoryInfo(MConf.get().territoryInfoTitlesMain, mplayer, factionTo);
+				String subtitle = parseTerritoryInfo(MConf.get().territoryInfoTitlesSub, mplayer, factionTo);
+				Mixin.sendTitleMessage(player, MConf.get().territoryInfoTitlesTicksIn, MConf.get().territoryInfoTitlesTicksStay, MConf.get().territoryInfoTitleTicksOut, maintitle, subtitle);
 			}
 			else
 			{
@@ -734,6 +713,9 @@ public class EngineMain extends EngineAbstract
 	
 	public String parseTerritoryInfo(String string, MPlayer mplayer, Faction faction)
 	{
+		if (string == null) throw new NullPointerException("string");
+		if (faction == null) throw new NullPointerException("faction");
+		
 		string = Txt.parse(string);
 		
 		string = string.replace("{name}", faction.getName());
@@ -741,13 +723,6 @@ public class EngineMain extends EngineAbstract
 		string = string.replace("{desc}", faction.getDescription());
 		
 		return string;
-	}
-	
-	public boolean isTerritoryInfoUsingScreen()
-	{
-		if ( ! MConf.get().territoryInfoUseScreen) return false;
-		if ( ! Mixin.isTitlesAvailable()) return false;
-		return true;
 	}
 	
 	// -------------------------------------------- //
@@ -816,14 +791,15 @@ public class EngineMain extends EngineAbstract
 	// -------------------------------------------- //
 	
 	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
-	public void canCombatDamageHappen(EntityDamageEvent event)
+	public void canCombatDamageHappen(EntityDamageByEntityEvent event)
 	{
-		// TODO: Can't we just listen to the class type the sub is of?
-		if (!(event instanceof EntityDamageByEntityEvent)) return;
-		EntityDamageByEntityEvent sub = (EntityDamageByEntityEvent)event;
-		
-		if (this.canCombatDamageHappen(sub, true)) return;
+		if (this.canCombatDamageHappen(event, true)) return;
 		event.setCancelled(true);
+
+		Entity damager = event.getDamager();
+		if ( ! (damager instanceof Arrow)) return;
+
+		damager.remove();
 	}
 
 	// mainly for flaming arrows; don't want allies or people in safe zones to be ignited even after damage event is cancelled
@@ -887,6 +863,10 @@ public class EngineMain extends EngineAbstract
 		// ... gather defender PS and faction information ...
 		PS defenderPs = PS.valueOf(defender.getLocation());
 		Faction defenderPsFaction = BoardColl.get().getFactionAt(defenderPs);
+
+		// ... fast evaluate if the attacker is overriding ...
+		MPlayer mplayer = MPlayer.get(eattacker);
+		if (mplayer != null && mplayer.isOverriding()) return true;
 		
 		// ... PVP flag may cause a damage block ...
 		if (defenderPsFaction.getFlag(MFlag.getFlagPvp()) == false)
@@ -962,7 +942,7 @@ public class EngineMain extends EngineAbstract
 		Rel relation = defendFaction.getRelationTo(attackFaction);
 
 		// Check the relation
-		if (mdefender.hasFaction() && relation.isFriend() && defenderPsFaction.getFlag(MFlag.getFlagFriendlyire()) == false)
+		if (relation.isFriend() && defenderPsFaction.getFlag(MFlag.getFlagFriendlyire()) == false)
 		{
 			ret = falseUnlessDisallowedPvpEventCancelled(attacker, defender, event);
 			if (!ret && notify) uattacker.msg("<i>You can't hurt %s<i>.", relation.getDescPlayerMany());
@@ -998,6 +978,10 @@ public class EngineMain extends EngineAbstract
 		if (MUtil.isntPlayer(entity)) return;
 		Player player = (Player)entity;
 		MPlayer mplayer = MPlayer.get(player);
+		
+		// ... and the attacker is a player ...
+		Entity attacker = MUtil.getLiableDamager(event);
+		if (! (attacker instanceof Player)) return;
 		
 		// ... and that player has a faction ...
 		if ( ! mplayer.hasFaction()) return;
@@ -1071,8 +1055,8 @@ public class EngineMain extends EngineAbstract
 		if (MUtil.isntPlayer(player)) return;
 		MPlayer mplayer = MPlayer.get(player);
 		
-		// ... and the player does not have adminmode ...
-		if (mplayer.isUsingAdminMode()) return;
+		// ... and the player is not overriding ...
+		if (mplayer.isOverriding()) return;
 		
 		// ... clean up the command ...
 		String command = event.getMessage();
@@ -1117,47 +1101,80 @@ public class EngineMain extends EngineAbstract
 			straw = Txt.removeLeadingCommandDust(straw);
 			straw = straw.toLowerCase();
 			
-			if (needle.startsWith(straw)) return true;
+			// If it starts with then it is possibly a subject.
+			if (needle.startsWith(straw))
+			{
+				// Get the remainder.
+				String remainder = needle.substring(straw.length());
+				
+				// If they were equal, definitely true.
+				if (remainder.isEmpty()) return true;
+				
+				// If the next is a space, the space is used as separator for sub commands or arguments.
+				// Otherwise it might just have been another command coincidentally starting with the first command.
+				// The old behaviour was if (needle.startsWith(straw)) return true;
+				// If "s" was block, then all commands starting with "s" was, now it isn't.
+				if (remainder.startsWith(" ")) return true;
+			}
+			
 		}
 		
 		return false;
 	}
 	
 	// -------------------------------------------- //
-	// FLAG: MONSTERS
+	// FLAG: MONSTERS & ANIMALS
 	// -------------------------------------------- //
 	
 	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
-	public void blockMonsters(CreatureSpawnEvent event)
+	public void blockMonstersAndAnimals(CreatureSpawnEvent event)
 	{
-		// If a creature is spawning ...
-		EntityType type = event.getEntityType();
+		// If this is a natural spawn ..
+		if ( ! NATURAL_SPAWN_REASONS.contains(event.getSpawnReason())) return;
 		
-		// ... and that creature is a monster ...
-		if ( ! MConf.get().entityTypesMonsters.contains(type)) return;
-		
-		// ... and the reason for the spawn is natural ...
-		SpawnReason reason = event.getSpawnReason();
-		if (reason != SpawnReason.NATURAL && reason != SpawnReason.JOCKEY && reason != SpawnReason.NETHER_PORTAL) return;
-		
-		// ... and monsters are forbidden at the location ...
+		// ... get the spawn location ...
 		Location location = event.getLocation();
 		if (location == null) return;		
-		
 		PS ps = PS.valueOf(location);
 		
+		// ... get the faction there ...
 		Faction faction = BoardColl.get().getFactionAt(ps);
 		if (faction == null) return;
 		
-		if (faction.getFlag(MFlag.getFlagMonsters())) return;
+		// ... get the entity type ...
+		EntityType type = event.getEntityType();
 		
-		// ... block the spawn.
+		// ... and if this type can't spawn in the faction ...
+		if (canSpawn(faction, type)) return;
+		
+		// ... then cancel.
 		event.setCancelled(true);
+	}
+	
+	public static boolean canSpawn(Faction faction, EntityType type)
+	{
+		if (MConf.get().entityTypesMonsters.contains(type))
+		{
+			// Monster
+			return faction.getFlag(MFlag.getFlagMonsters());
+		}
+		else if (MConf.get().entityTypesAnimals.contains(type))
+		{
+			// Animal
+			return faction.getFlag(MFlag.getFlagAnimals());
+		}
+		else
+		{
+			// Other
+			return true;
+		}
 	}
 	
 	// -------------------------------------------- //
 	// FLAG: EXPLOSIONS
 	// -------------------------------------------- //
+	
+	protected Set<DamageCause> DAMAGE_CAUSE_EXPLOSIONS = EnumSet.of(DamageCause.BLOCK_EXPLOSION, DamageCause.ENTITY_EXPLOSION);
 	
 	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
 	public void blockExplosion(HangingBreakEvent event)
@@ -1171,6 +1188,22 @@ public class EngineMain extends EngineAbstract
 		if (faction.isExplosionsAllowed()) return;
 		
 		// ... then cancel.
+		event.setCancelled(true);
+	}
+	 
+	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+	public void blockExplosion(EntityDamageEvent event)
+	{
+		// If an explosion damages ...
+		if (DAMAGE_CAUSE_EXPLOSIONS.contains(event.getCause())) return;
+		
+		// ... an entity that is modified on damage ...
+		if ( ! MConf.get().entityTypesEditOnDamage.contains(event.getEntityType())) return;
+		
+		// ... and the faction has explosions disabled ...
+		if (BoardColl.get().getFactionAt(PS.valueOf(event.getEntity())).isExplosionsAllowed()) return;
+		
+		// ... then cancel!
 		event.setCancelled(true);
 	}
 	
@@ -1251,7 +1284,27 @@ public class EngineMain extends EngineAbstract
 		// ... stop the block alteration.
 		event.setCancelled(true);
 	}
-
+	
+	// -------------------------------------------- //
+	// FLAG: ZOMBIEGRIEF
+	// -------------------------------------------- //
+	
+	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+	public void denyZombieGrief(EntityBreakDoorEvent event)
+	{
+		// If a zombie is breaking a door ...
+		Entity entity = event.getEntity();
+		if (!(entity instanceof Zombie)) return;
+		
+		// ... and the faction there has zombiegrief disabled ...
+		PS ps = PS.valueOf(event.getBlock());
+		Faction faction = BoardColl.get().getFactionAt(ps);
+		if (faction.getFlag(MFlag.getFlagZombiegrief())) return;
+		
+		// ... stop the door breakage.
+		event.setCancelled(true);
+	}
+	
 	// -------------------------------------------- //
 	// FLAG: FIRE SPREAD
 	// -------------------------------------------- //
@@ -1310,7 +1363,7 @@ public class EngineMain extends EngineAbstract
 		String name = mplayer.getName();
 		if (MConf.get().playersWhoBypassAllProtection.contains(name)) return true;
 
-		if (mplayer.isUsingAdminMode()) return true;
+		if (mplayer.isOverriding()) return true;
 
 		if (!MPerm.getPermBuild().has(mplayer, ps, false) && MPerm.getPermPainbuild().has(mplayer, ps, false))
 		{
@@ -1335,7 +1388,9 @@ public class EngineMain extends EngineAbstract
 	{
 		if (!event.canBuild()) return;
 
-		if (canPlayerBuildAt(event.getPlayer(), PS.valueOf(event.getBlock()), true)) return;
+		boolean verboose = ! isFake(event);
+
+		if (canPlayerBuildAt(event.getPlayer(), PS.valueOf(event.getBlock()), verboose)) return;
 		
 		event.setBuild(false);
 		event.setCancelled(true);
@@ -1344,7 +1399,9 @@ public class EngineMain extends EngineAbstract
 	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
 	public void blockBuild(BlockBreakEvent event)
 	{
-		if (canPlayerBuildAt(event.getPlayer(), PS.valueOf(event.getBlock()), true)) return;
+		boolean verboose = ! isFake(event);
+
+		if (canPlayerBuildAt(event.getPlayer(), PS.valueOf(event.getBlock()), verboose)) return;
 		
 		event.setCancelled(true);
 	}
@@ -1352,9 +1409,11 @@ public class EngineMain extends EngineAbstract
 	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
 	public void blockBuild(BlockDamageEvent event)
 	{
-		if (!event.getInstaBreak()) return;
+		if ( ! event.getInstaBreak()) return;
 
-		if (canPlayerBuildAt(event.getPlayer(), PS.valueOf(event.getBlock()), true)) return;
+		boolean verboose = ! isFake(event);
+
+		if (canPlayerBuildAt(event.getPlayer(), PS.valueOf(event.getBlock()), verboose)) return;
 		
 		event.setCancelled(true);
 	}
@@ -1363,7 +1422,7 @@ public class EngineMain extends EngineAbstract
 	public void blockBuild(BlockPistonExtendEvent event)
 	{
 		// Is using Spigot or is checking deactivated by MConf?
-		if (SpigotFeatures.isActive() || ! MConf.get().handlePistonProtectionThroughDenyBuild) return;
+		if (IntegrationSpigot.get().isIntegrationActive() || ! MConf.get().handlePistonProtectionThroughDenyBuild) return;
 		
 		Block block = event.getBlock();
 		
@@ -1395,7 +1454,7 @@ public class EngineMain extends EngineAbstract
 	public void blockBuild(BlockPistonRetractEvent event)
 	{	
 		// Is using Spigot or is checking deactivated by MConf?
-		if (SpigotFeatures.isActive() || ! MConf.get().handlePistonProtectionThroughDenyBuild) return;
+		if (IntegrationSpigot.get().isIntegrationActive() || ! MConf.get().handlePistonProtectionThroughDenyBuild) return;
 				
 		// If not a sticky piston, retraction should be fine
 		if ( ! event.isSticky()) return;
@@ -1421,7 +1480,9 @@ public class EngineMain extends EngineAbstract
 	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
 	public void blockBuild(HangingPlaceEvent event)
 	{
-		if (canPlayerBuildAt(event.getPlayer(), PS.valueOf(event.getEntity().getLocation()), true)) return;
+		boolean verboose = ! isFake(event);
+
+		if (canPlayerBuildAt(event.getPlayer(), PS.valueOf(event.getEntity().getLocation()), verboose)) return;
 		
 		event.setCancelled(true);
 	}
@@ -1435,10 +1496,81 @@ public class EngineMain extends EngineAbstract
 		Entity breaker = entityEvent.getRemover();
 		if (MUtil.isntPlayer(breaker)) return;
 
-		if ( ! canPlayerBuildAt(breaker, PS.valueOf(event.getEntity().getLocation()), true))
+		boolean verboose = ! isFake(event);
+
+		if ( ! canPlayerBuildAt(breaker, PS.valueOf(event.getEntity().getLocation()), verboose))
 		{
 			event.setCancelled(true);
 		}
+	}
+	
+	// Check for punching out fires where players should not be able to
+	@SuppressWarnings("deprecation")
+	@EventHandler(priority = EventPriority.NORMAL)
+	public void blockBuild(PlayerInteractEvent event)
+	{
+		// ... if it is a left click on block ...
+		if (event.getAction() != Action.LEFT_CLICK_BLOCK) return;
+		
+		// .. and the clicked block is not null ... 
+		if (event.getClickedBlock() == null) return;
+		
+		Block potentialBlock = event.getClickedBlock().getRelative(BlockFace.UP, 1);
+		
+		// .. and the potential block is not null ... 
+		if (potentialBlock == null) return;
+		
+		// ... and we're only going to check for fire ... (checking everything else would be bad performance wise)
+		if (potentialBlock.getType() != Material.FIRE) return;
+		
+		// ... check if they can build ...
+		if (canPlayerBuildAt(event.getPlayer(), PS.valueOf(potentialBlock), true)) return;
+		
+		// ... nope, cancel it
+		event.setCancelled(true);
+		
+		// .. and compensate for client side prediction
+		event.getPlayer().sendBlockChange(potentialBlock.getLocation(), potentialBlock.getType(), potentialBlock.getState().getRawData());
+	}
+	
+	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+	public void blockLiquidFlow(BlockFromToEvent event)
+	{
+		if ( ! MConf.get().protectionLiquidFlowEnabled) return;
+		
+		// Prepare fields
+		Block fromBlock = event.getBlock();
+		int fromCX = fromBlock.getX() >> 4;
+		int fromCZ = fromBlock.getZ() >> 4;
+		BlockFace face = event.getFace();
+		int toCX = (fromBlock.getX() + face.getModX()) >> 4;
+		int toCZ = (fromBlock.getZ() + face.getModZ()) >> 4;
+		
+		// If a liquid (or dragon egg) moves from one chunk to another ...
+		if (toCX == fromCX && toCZ == fromCZ) return;
+		
+		Board board = BoardColl.get().getFixed(fromBlock.getWorld().getName().toLowerCase(), false);
+		if (board == null) return;
+		Map<PS, TerritoryAccess> map = board.getMapRaw();
+		if (map.isEmpty()) return;
+		
+		PS fromPs = PS.valueOf(fromCX, fromCZ);
+		PS toPs = PS.valueOf(toCX, toCZ);
+		TerritoryAccess fromTa = map.get(fromPs);
+		TerritoryAccess toTa = map.get(toPs);
+		String fromId = fromTa != null ? fromTa.getHostFactionId() : Factions.ID_NONE;
+		String toId = toTa != null ? toTa.getHostFactionId() : Factions.ID_NONE;
+		
+		// ... and the chunks belong to different factions ...
+		if (toId.equals(fromId)) return;
+		
+		// ... and the faction "from" can not build at "to" ...
+		Faction fromFac = FactionColl.get().getFixed(fromId);
+		Faction toFac = FactionColl.get().getFixed(toId);
+		if (MPerm.getPermBuild().has(fromFac, toFac)) return;
+		
+		// ... cancel!
+		event.setCancelled(true);
 	}
 	
 	// -------------------------------------------- //
@@ -1501,7 +1633,7 @@ public class EngineMain extends EngineAbstract
 		if (MConf.get().playersWhoBypassAllProtection.contains(name)) return true;
 
 		MPlayer mplayer = MPlayer.get(player);
-		if (mplayer.isUsingAdminMode()) return true;
+		if (mplayer.isOverriding()) return true;
 		
 		return MPerm.getPermBuild().has(mplayer, ps, verboose);
 	}
@@ -1514,7 +1646,7 @@ public class EngineMain extends EngineAbstract
 		if (MConf.get().playersWhoBypassAllProtection.contains(name)) return true;
 
 		MPlayer me = MPlayer.get(player);
-		if (me.isUsingAdminMode()) return true;
+		if (me.isOverriding()) return true;
 		
 		PS ps = PS.valueOf(block);
 		Material material = block.getType();
@@ -1560,7 +1692,7 @@ public class EngineMain extends EngineAbstract
 
 		// ... and the player is not using admin mode ...
 		MPlayer me = MPlayer.get(player);
-		if (me.isUsingAdminMode()) return true;
+		if (me.isOverriding()) return true;
 		
 		// ... check container entity rights ...
 		if (MConf.get().entityTypesContainer.contains(type) && ! MPerm.getPermContainer().has(me, ps, verboose)) return false;

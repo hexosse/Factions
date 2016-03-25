@@ -3,13 +3,13 @@ package com.massivecraft.factions.cmd;
 import org.bukkit.ChatColor;
 
 import com.massivecraft.factions.Perm;
-import com.massivecraft.factions.cmd.arg.ARMPlayer;
+import com.massivecraft.factions.cmd.type.TypeMPlayer;
 import com.massivecraft.factions.entity.MPerm;
 import com.massivecraft.factions.entity.MPlayer;
 import com.massivecraft.factions.event.EventFactionsTitleChange;
 import com.massivecraft.massivecore.MassiveException;
-import com.massivecraft.massivecore.cmd.arg.ARString;
-import com.massivecraft.massivecore.cmd.req.ReqHasPerm;
+import com.massivecraft.massivecore.command.requirement.RequirementHasPerm;
+import com.massivecraft.massivecore.command.type.primitive.TypeString;
 import com.massivecraft.massivecore.util.Txt;
 
 public class CmdFactionsTitle extends FactionsCommand
@@ -23,12 +23,12 @@ public class CmdFactionsTitle extends FactionsCommand
 		// Aliases
 		this.addAliases("title");
 
-		// Args
-		this.addArg(ARMPlayer.get(), "player");
-		this.addArg(ARString.get(), "title", "", true);
+		// Parameters
+		this.addParameter(TypeMPlayer.get(), "player");
+		this.addParameter(TypeString.get(), "title", "", true);
 
 		// Requirements
-		this.addRequirements(ReqHasPerm.get(Perm.TITLE.node));
+		this.addRequirements(RequirementHasPerm.get(Perm.TITLE.node));
 	}
 
 	// -------------------------------------------- //
@@ -51,8 +51,12 @@ public class CmdFactionsTitle extends FactionsCommand
 		// MPerm
 		if ( ! MPerm.getPermTitle().has(msender, you.getFaction(), true)) return;
 		
-		// Verify
-		if ( ! canIAdministerYou(msender, you)) return;
+		// Rank Check
+		if (!msender.isOverriding() && you.getRole().isMoreThan(msender.getRole()))
+		{
+			msg("<b>You can not edit titles for higher ranks.");
+			return;
+		}
 
 		// Event
 		EventFactionsTitleChange event = new EventFactionsTitleChange(sender, you, newTitle);

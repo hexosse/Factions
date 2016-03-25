@@ -6,8 +6,8 @@ import java.util.List;
 import com.massivecraft.factions.Perm;
 import com.massivecraft.factions.entity.MFlag;
 import com.massivecraft.massivecore.MassiveException;
-import com.massivecraft.massivecore.cmd.ArgSetting;
-import com.massivecraft.massivecore.cmd.req.ReqHasPerm;
+import com.massivecraft.massivecore.command.Parameter;
+import com.massivecraft.massivecore.command.requirement.RequirementHasPerm;
 import com.massivecraft.massivecore.util.Txt;
 
 public class CmdFactionsFlagList extends FactionsCommand
@@ -19,13 +19,13 @@ public class CmdFactionsFlagList extends FactionsCommand
 	public CmdFactionsFlagList()
 	{
 		// Aliases
-		this.addAliases("l", "list");
+		this.addAliases("list");
 		
-		// Args
-		this.addArg(ArgSetting.getPage());
+		// Parameters
+		this.addParameter(Parameter.getPage());
 		
 		// Requirements
-		this.addRequirements(ReqHasPerm.get(Perm.FLAG_LIST.node));
+		this.addRequirements(RequirementHasPerm.get(Perm.FLAG_LIST.node));
 	}
 	
 	// -------------------------------------------- //
@@ -43,12 +43,12 @@ public class CmdFactionsFlagList extends FactionsCommand
 		
 		for (MFlag flag : MFlag.getAll())
 		{
-			if ( ! flag.isVisible() && ! msender.isUsingAdminMode()) continue;
+			if ( ! flag.isVisible() && ! msender.isOverriding()) continue;
 			messages.add(flag.getStateDesc(false, false, true, true, true, false));
 		}
 		
 		//Send messages
-		sendMessage(Txt.getPage(messages, page, "Available Faction Flags", sender));
+		message(Txt.getPage(messages, page, "Available Faction Flags", this));
 	}
 	
 }

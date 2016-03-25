@@ -6,8 +6,8 @@ import java.util.List;
 import com.massivecraft.factions.Perm;
 import com.massivecraft.factions.entity.MPerm;
 import com.massivecraft.massivecore.MassiveException;
-import com.massivecraft.massivecore.cmd.ArgSetting;
-import com.massivecraft.massivecore.cmd.req.ReqHasPerm;
+import com.massivecraft.massivecore.command.Parameter;
+import com.massivecraft.massivecore.command.requirement.RequirementHasPerm;
 import com.massivecraft.massivecore.util.Txt;
 
 public class CmdFactionsPermList extends FactionsCommand
@@ -19,13 +19,13 @@ public class CmdFactionsPermList extends FactionsCommand
 	public CmdFactionsPermList()
 	{
 		// Aliases
-		this.addAliases("l", "list");
+		this.addAliases("list");
 		
-		// Args
-		this.addArg(ArgSetting.getPage());
+		// Parameters
+		this.addParameter(Parameter.getPage());
 		
 		// Requirements
-		this.addRequirements(ReqHasPerm.get(Perm.PERM_LIST.node));
+		this.addRequirements(RequirementHasPerm.get(Perm.PERM_LIST.node));
 	}
 	
 	// -------------------------------------------- //
@@ -43,12 +43,12 @@ public class CmdFactionsPermList extends FactionsCommand
 		
 		for (MPerm perm : MPerm.getAll())
 		{
-			if ( ! perm.isVisible() && ! msender.isUsingAdminMode()) continue;
+			if ( ! perm.isVisible() && ! msender.isOverriding()) continue;
 			messages.add(perm.getDesc(true, true));
 		}
 		
 		// Send messages
-		sendMessage(Txt.getPage(messages, page, "Available Faction Perms", sender));
+		message(Txt.getPage(messages, page, "Available Faction Perms", this));
 	}
 
 }

@@ -2,6 +2,8 @@ package com.massivecraft.factions.cmd;
 
 import java.util.ArrayList;
 
+import org.bukkit.ChatColor;
+
 import com.massivecraft.factions.Factions;
 import com.massivecraft.factions.Perm;
 import com.massivecraft.factions.Rel;
@@ -13,8 +15,9 @@ import com.massivecraft.factions.event.EventFactionsCreate;
 import com.massivecraft.factions.event.EventFactionsMembershipChange;
 import com.massivecraft.factions.event.EventFactionsMembershipChange.MembershipChangeReason;
 import com.massivecraft.massivecore.MassiveException;
-import com.massivecraft.massivecore.cmd.arg.ARString;
-import com.massivecraft.massivecore.cmd.req.ReqHasPerm;
+import com.massivecraft.massivecore.command.requirement.RequirementHasPerm;
+import com.massivecraft.massivecore.command.type.primitive.TypeString;
+import com.massivecraft.massivecore.mson.Mson;
 import com.massivecraft.massivecore.store.MStore;
 
 public class CmdFactionsCreate extends FactionsCommand
@@ -26,14 +29,14 @@ public class CmdFactionsCreate extends FactionsCommand
 	public CmdFactionsCreate()
 	{
 		// Aliases
-		this.addAliases("create");
+		this.addAliases("create", "new");
 
-		// Args
-		this.addArg(ARString.get(), "name");
+		// Parameters
+		this.addParameter(TypeString.get(), "name");
 
 		// Requirements
 		this.addRequirements(ReqHasntFaction.get());
-		this.addRequirements(ReqHasPerm.get(Perm.CREATE.node));
+		this.addRequirements(RequirementHasPerm.get(Perm.CREATE.node));
 	}
 
 	// -------------------------------------------- //
@@ -56,7 +59,7 @@ public class CmdFactionsCreate extends FactionsCommand
 		ArrayList<String> nameValidationErrors = FactionColl.get().validateName(newName);
 		if (nameValidationErrors.size() > 0)
 		{
-			sendMessage(nameValidationErrors);
+			message(nameValidationErrors);
 			return;
 		}
 
@@ -81,7 +84,7 @@ public class CmdFactionsCreate extends FactionsCommand
 		
 		// Inform
 		msg("<i>You created the faction %s", faction.getName(msender));
-		msg("<i>You should now: %s", Factions.get().getOuterCmdFactions().cmdFactionsDescription.getUseageTemplate());
+		message(Mson.mson(mson("You should now: ").color(ChatColor.YELLOW), CmdFactions.get().cmdFactionsDescription.getTemplate()));
 
 		// Log
 		if (MConf.get().logFactionCreate)

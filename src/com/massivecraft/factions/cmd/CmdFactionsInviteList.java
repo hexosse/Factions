@@ -4,14 +4,14 @@ import java.util.List;
 
 import com.massivecraft.factions.Perm;
 import com.massivecraft.factions.Rel;
-import com.massivecraft.factions.cmd.arg.ARFaction;
+import com.massivecraft.factions.cmd.type.TypeFaction;
 import com.massivecraft.factions.entity.Faction;
 import com.massivecraft.factions.entity.MPerm;
 import com.massivecraft.factions.entity.MPlayer;
 import com.massivecraft.massivecore.MassiveException;
-import com.massivecraft.massivecore.cmd.ArgSetting;
-import com.massivecraft.massivecore.cmd.req.ReqHasPerm;
-import com.massivecraft.massivecore.pager.PagerSimple;
+import com.massivecraft.massivecore.command.Parameter;
+import com.massivecraft.massivecore.command.requirement.RequirementHasPerm;
+import com.massivecraft.massivecore.pager.Pager;
 import com.massivecraft.massivecore.pager.Stringifier;
 import com.massivecraft.massivecore.util.Txt;
 
@@ -24,14 +24,14 @@ public class CmdFactionsInviteList extends FactionsCommand
 	public CmdFactionsInviteList()
 	{
 		// Aliases
-		this.addAliases("l", "list");
+		this.addAliases("list");
 
-		// Args
-		this.addArg(ArgSetting.getPage());
-		this.addArg(ARFaction.get(), "faction", "you");
+		// Parameters
+		this.addParameter(Parameter.getPage());
+		this.addParameter(TypeFaction.get(), "faction", "you");
 		
 		// Requirements
-		this.addRequirements(ReqHasPerm.get(Perm.INVITE_LIST.node));
+		this.addRequirements(RequirementHasPerm.get(Perm.INVITE_LIST.node));
 	}
 	
 	// -------------------------------------------- //
@@ -51,13 +51,9 @@ public class CmdFactionsInviteList extends FactionsCommand
 		// MPerm
 		if ( ! MPerm.getPermInvite().has(msender, msenderFaction, true)) return;
 		
-		// Create Pager
+		// Pager Create
 		final List<MPlayer> mplayers = faction.getInvitedMPlayers();
-		final PagerSimple<MPlayer> pager = new PagerSimple<MPlayer>(mplayers, sender);
-		
-		// Use Pager
-		List<String> messages = pager.getPageTxt(page, "Invited Players List", new Stringifier<MPlayer>(){
-			
+		final Pager<MPlayer> pager = new Pager<MPlayer>(this, "Invited Players List", page, mplayers, new Stringifier<MPlayer>(){
 			public String toString(MPlayer target, int index)
 			{
 				// TODO: Madus would like to implement this in MPlayer
@@ -77,8 +73,8 @@ public class CmdFactionsInviteList extends FactionsCommand
 			}
 		});
 		
-		// Send message
-		sendMessage(messages);
+		// Pager Message
+		pager.message();
 	}
 	
 }

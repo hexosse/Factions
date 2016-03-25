@@ -1,9 +1,9 @@
 main: com.massivecraft.factions.Factions
 name: Factions
-version: 2.8.0
-website: http://massivecraft.com/factions
-authors: [Cayorion, Brettflan]
-description: §eFactions allows the players to team up and claim land as their own and start wars with other factions. This way we hope to inspire politics, intrigue, and team spirit. §aCayorion §efrom the minecraft server §aMassiveCraft §eis the lead Factions programmer. Feel free to visit us at §bhttp://massivecraft.com
+version: 2.8.7Beta
+website: https://www.massivecraft.com/factions
+authors: [Cayorion, Madus, Ulumulu1510, MarkehMe, Brettflan]
+description: §eFactions allows the players to team up and claim land as their own and start wars with other factions. This way we hope to inspire politics, intrigue, and team spirit. §aCayorion §efrom the minecraft server §aMassiveCraft §eis the lead Factions programmer. Feel free to visit us at §bhttps://www.massivecraft.com
 depend: [MassiveCore]
 softdepend: [PermissionsEx, Permissions, Essentials, EssentialsChat, HeroChat, iChat, LocalAreaChat, LWC, nChat, ChatManager, AuthMe, Vault, Spout, WorldEdit, WorldGuard, AuthDB, CaptureThePoints, CombatTag]
 permissions:
@@ -14,7 +14,7 @@ permissions:
   factions.access.faction: {description: grant faction access, with the proper fperm, default: false}
   factions.access.player: {description: grant player access, with the proper fperm, default: false}
   factions.access.view: {description: view access, default: false}
-  factions.admin: {description: enable adminmode, default: false}
+  factions.override: {description: enable override mode, default: false}
   factions.claim: {description: claim faction territory, default: false}
   factions.claim.one: {description: claim a single chunk, default: false}
   factions.claim.auto: {description: claim as you walk around, default: false}
@@ -38,7 +38,6 @@ permissions:
   factions.invite.add: {description: invite player, default: false}
   factions.invite.remove: {description: revoke an invite, default: false}
   factions.join: {description: join faction, default: false}
-  factions.join.any: {description: join closed faction, default: false}
   factions.join.others: {description: have another player join faction, default: false}
   factions.kick: {description: kick player from faction, default: false}
   factions.leave: {description: leave your faction, default: false}
@@ -63,15 +62,19 @@ permissions:
   factions.rank: {description: manage/show ranks, default: false}
   factions.rank.show: {description: show rank, default: false}
   factions.rank.action: {description: change rank, default: false}
-  factions.relation: {description: set relation wish to another faction, default: false}
+  factions.relation: {description: manage faction relations, default: false}
+  factions.relation.list: {description: list all factions with certain relation, default: false}
+  factions.relation.set: {description: set relation wish to another faction, default: false}
+  factions.relation.wishes: {description: list the relation wishes, default: false}
   factions.seechunk: {description: see the chunk you stand in, default: false}
   factions.seechunkold: {description: see the chunk you stand in, default: false}
   factions.sethome: {description: set the faction home, default: false}
   factions.setpower: {description: set power, default: false}
-  factions.status: {description: show faction status, default: false}
+  factions.status: {description: show status, default: false}
   factions.name: {description: set faction name, default: false}
   factions.title: {description: set player title, default: false}
   factions.title.color: {description: set player title with color, default: false}
+  factions.territorytitles: {description: toggle territory titles, default: false}
   factions.unclaim: {description: unclaim faction territory, default: false}
   factions.unclaim.one: {description: unclaim a single chunk, default: false}
   factions.unclaim.auto: {description: unclaim as you walk around, default: false}
@@ -80,6 +83,7 @@ permissions:
   factions.unclaim.circle: {description: unclaim by circle and radius, default: false}
   factions.unclaim.all: {description: unclaim all faction land, default: false}
   factions.unsethome: {description: unset faction home, default: false}
+  factions.unstuck: {description: teleport to nearest wilderness, default: false}
   factions.version: {description: see plugin version, default: false}
 # -------------------------------------------- #
 # STAR NOTATION
@@ -90,7 +94,7 @@ permissions:
       factions.access.faction: true
       factions.access.player: true
       factions.access.view: true
-      factions.admin: true
+      factions.override: true
       factions.claim: true
       factions.claim.one: true
       factions.claim.auto: true
@@ -115,7 +119,6 @@ permissions:
       factions.invite.add: true
       factions.invite.remove: true
       factions.join: true
-      factions.join.any: true
       factions.join.others: true
       factions.kick: true
       factions.leader: true
@@ -143,6 +146,9 @@ permissions:
       factions.powerboost: true
       factions.promote: true
       factions.relation: true
+      factions.relation.list: true
+      factions.relation.set: true
+      factions.relation.wishes: true
       factions.seechunk: true
       factions.seechunkold: true
       factions.sethome: true
@@ -151,6 +157,7 @@ permissions:
       factions.name: true
       factions.title: true
       factions.title.color: true
+      factions.territorytitles: true
       factions.unclaim: true
       factions.unclaim.one: true
       factions.unclaim.auto: true
@@ -159,6 +166,7 @@ permissions:
       factions.unclaim.circle: true
       factions.unclaim.all: true
       factions.unsethome: true
+      factions.unstuck: true
       factions.version: true
 # -------------------------------------------- #
 # KITS
@@ -176,7 +184,6 @@ permissions:
     children:
       factions.kit.rank1: true
       factions.powerboost: true
-      factions.join.any: true
       factions.join.others: true
       factions.leader.any: true
       factions.officer.any: true
@@ -186,7 +193,7 @@ permissions:
     default: false
     children:
       factions.kit.rank0: true
-      factions.admin: true
+      factions.override: true
       factions.invite.list.other: true
   factions.kit.rank0:
     default: false
@@ -244,6 +251,9 @@ permissions:
       factions.rank.show: true
       factions.rank.action: true
       factions.relation: true
+      factions.relation.list: true
+      factions.relation.set: true
+      factions.relation.wishes: true
       factions.seechunk: true
       factions.seechunkold: true
       factions.sethome: true
@@ -251,6 +261,7 @@ permissions:
       factions.name: true
       factions.title: true
       factions.title.color: true
+      factions.territorytitles: true
       factions.unclaim: true
       factions.unclaim.one: true
       factions.unclaim.auto: true
@@ -259,6 +270,7 @@ permissions:
       factions.unclaim.circle: true
       factions.unclaim.all: true
       factions.unsethome: true
+      factions.unstuck: true
       factions.version: true
   factions.kit.default:
     default: true

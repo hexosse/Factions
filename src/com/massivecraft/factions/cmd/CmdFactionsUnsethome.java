@@ -1,12 +1,12 @@
 package com.massivecraft.factions.cmd;
 
 import com.massivecraft.factions.Perm;
-import com.massivecraft.factions.cmd.arg.ARFaction;
+import com.massivecraft.factions.cmd.type.TypeFaction;
 import com.massivecraft.factions.entity.Faction;
 import com.massivecraft.factions.entity.MPerm;
 import com.massivecraft.factions.event.EventFactionsHomeChange;
 import com.massivecraft.massivecore.MassiveException;
-import com.massivecraft.massivecore.cmd.req.ReqHasPerm;
+import com.massivecraft.massivecore.command.requirement.RequirementHasPerm;
 
 public class CmdFactionsUnsethome extends FactionsCommandHome
 {
@@ -19,11 +19,11 @@ public class CmdFactionsUnsethome extends FactionsCommandHome
 		// Aliases
 		this.addAliases("unsethome");
 
-		// Args
-		this.addArg(ARFaction.get(), "faction", "you");
+		// Parameters
+		this.addParameter(TypeFaction.get(), "faction", "you");
 
 		// Requirements
-		this.addRequirements(ReqHasPerm.get(Perm.UNSETHOME.node));
+		this.addRequirements(RequirementHasPerm.get(Perm.UNSETHOME.node));
 	}
 
 	// -------------------------------------------- //

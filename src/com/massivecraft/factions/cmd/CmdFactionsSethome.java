@@ -1,14 +1,13 @@
 package com.massivecraft.factions.cmd;
 
-import com.massivecraft.factions.Factions;
 import com.massivecraft.factions.Perm;
-import com.massivecraft.factions.cmd.arg.ARFaction;
+import com.massivecraft.factions.cmd.type.TypeFaction;
 import com.massivecraft.factions.entity.Faction;
 import com.massivecraft.factions.entity.MPerm;
 import com.massivecraft.factions.event.EventFactionsHomeChange;
 import com.massivecraft.massivecore.MassiveException;
-import com.massivecraft.massivecore.cmd.req.ReqHasPerm;
-import com.massivecraft.massivecore.cmd.req.ReqIsPlayer;
+import com.massivecraft.massivecore.command.requirement.RequirementHasPerm;
+import com.massivecraft.massivecore.command.requirement.RequirementIsPlayer;
 import com.massivecraft.massivecore.ps.PS;
 
 public class CmdFactionsSethome extends FactionsCommandHome
@@ -22,12 +21,12 @@ public class CmdFactionsSethome extends FactionsCommandHome
 		// Aliases
 		this.addAliases("sethome");
 
-		// Args
-		this.addArg(ARFaction.get(), "faction", "you");
+		// Parameters
+		this.addParameter(TypeFaction.get(), "faction", "you");
 
 		// Requirements
-		this.addRequirements(ReqHasPerm.get(Perm.SETHOME.node));
-		this.addRequirements(ReqIsPlayer.get());
+		this.addRequirements(RequirementHasPerm.get(Perm.SETHOME.node));
+		this.addRequirements(RequirementIsPlayer.get());
 	}
 
 	// -------------------------------------------- //
@@ -46,7 +45,7 @@ public class CmdFactionsSethome extends FactionsCommandHome
 		if ( ! MPerm.getPermSethome().has(msender, faction, true)) return;
 		
 		// Verify
-		if (!msender.isUsingAdminMode() && !faction.isValidHome(newHome))
+		if (!msender.isOverriding() && !faction.isValidHome(newHome))
 		{
 			msender.msg("<b>Sorry, your faction home can only be set inside your own claimed territory.");
 			return;
@@ -63,7 +62,7 @@ public class CmdFactionsSethome extends FactionsCommandHome
 		
 		// Inform
 		faction.msg("%s<i> set the home for your faction. You can now use:", msender.describeTo(msenderFaction, true));
-		faction.sendMessage(Factions.get().getOuterCmdFactions().cmdFactionsHome.getUseageTemplate());
+		faction.sendMessage(CmdFactions.get().cmdFactionsHome.getTemplate());
 		if (faction != msenderFaction)
 		{
 			msender.msg("<i>You have set the home for " + faction.getName(msender) + "<i>.");

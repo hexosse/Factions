@@ -4,13 +4,13 @@ import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 
 import com.massivecraft.factions.Perm;
-import com.massivecraft.factions.cmd.arg.ARMPlayer;
+import com.massivecraft.factions.cmd.type.TypeMPlayer;
 import com.massivecraft.factions.entity.MConf;
 import com.massivecraft.factions.entity.MPlayer;
 import com.massivecraft.factions.event.EventFactionsRemovePlayerMillis;
 import com.massivecraft.massivecore.MassiveException;
 import com.massivecraft.massivecore.Progressbar;
-import com.massivecraft.massivecore.cmd.req.ReqHasPerm;
+import com.massivecraft.massivecore.command.requirement.RequirementHasPerm;
 import com.massivecraft.massivecore.util.TimeDiffUtil;
 import com.massivecraft.massivecore.util.TimeUnit;
 import com.massivecraft.massivecore.util.Txt;
@@ -26,11 +26,11 @@ public class CmdFactionsPlayer extends FactionsCommand
 		// Aliases
 		this.addAliases("p", "player");
 
-		// Args
-		this.addArg(ARMPlayer.get(), "player", "you");
+		// Parameters
+		this.addParameter(TypeMPlayer.get(), "player", "you");
 
 		// Requirements
-		this.addRequirements(ReqHasPerm.get(Perm.PLAYER.node));
+		this.addRequirements(RequirementHasPerm.get(Perm.PLAYER.node));
 	}
 
 	// -------------------------------------------- //
@@ -44,7 +44,7 @@ public class CmdFactionsPlayer extends FactionsCommand
 		MPlayer mplayer = this.readArg(msender);
 		
 		// INFO: Title
-		msg(Txt.titleize("Player " + mplayer.describeTo(msender)));
+		message(Txt.titleize("Player " + mplayer.describeTo(msender)));
 		
 		// INFO: Power (as progress bar)
 		double progressbarQuota = 0;

@@ -2,9 +2,9 @@ package com.massivecraft.factions.cmd;
 
 import com.massivecraft.factions.Perm;
 import com.massivecraft.massivecore.MassiveException;
-import com.massivecraft.massivecore.cmd.arg.ARBoolean;
-import com.massivecraft.massivecore.cmd.req.ReqHasPerm;
-import com.massivecraft.massivecore.cmd.req.ReqIsPlayer;
+import com.massivecraft.massivecore.command.requirement.RequirementHasPerm;
+import com.massivecraft.massivecore.command.requirement.RequirementIsPlayer;
+import com.massivecraft.massivecore.command.type.primitive.TypeBoolean;
 import com.massivecraft.massivecore.util.Txt;
 
 public class CmdFactionsSeeChunk extends FactionsCommand
@@ -18,12 +18,12 @@ public class CmdFactionsSeeChunk extends FactionsCommand
 		// Aliases
 		this.addAliases("sc", "seechunk");
 		
-		// Args
-		this.addArg(ARBoolean.get(), "active", "toggle");
+		// Parameters
+		this.addParameter(TypeBoolean.getOn(), "active", "toggle");
 
 		// Requirements
-		this.addRequirements(ReqHasPerm.get(Perm.SEECHUNK.node));
-		this.addRequirements(ReqIsPlayer.get());
+		this.addRequirements(RequirementHasPerm.get(Perm.SEECHUNK.node));
+		this.addRequirements(RequirementIsPlayer.get());
 	}
 
 	// -------------------------------------------- //

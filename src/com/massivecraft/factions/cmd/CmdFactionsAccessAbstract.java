@@ -9,7 +9,7 @@ import com.massivecraft.factions.TerritoryAccess;
 import com.massivecraft.factions.entity.BoardColl;
 import com.massivecraft.factions.entity.Faction;
 import com.massivecraft.massivecore.MassiveException;
-import com.massivecraft.massivecore.cmd.req.ReqIsPlayer;
+import com.massivecraft.massivecore.command.requirement.RequirementIsPlayer;
 import com.massivecraft.massivecore.ps.PS;
 import com.massivecraft.massivecore.ps.PSFormatHumanSpace;
 import com.massivecraft.massivecore.util.Txt;
@@ -32,7 +32,7 @@ public abstract class CmdFactionsAccessAbstract extends FactionsCommand
 	public CmdFactionsAccessAbstract()
 	{
 		// Requirements
-		this.addRequirements(ReqIsPlayer.get());
+		this.addRequirements(RequirementIsPlayer.get());
 	}
 	
 	// -------------------------------------------- //
@@ -53,7 +53,10 @@ public abstract class CmdFactionsAccessAbstract extends FactionsCommand
 
 	public void sendAccessInfo()
 	{
-		sendMessage(Txt.titleize("Access at " + chunk.toString(PSFormatHumanSpace.get())));
+		Object title = "Access at " + chunk.toString(PSFormatHumanSpace.get());
+		title = Txt.titleize(title);
+		message(title);
+		
 		msg("<k>Host Faction: %s", hostFaction.describeTo(msender, true));
 		msg("<k>Host Faction Allowed: %s", ta.isHostFactionAllowed() ? Txt.parse("<lime>TRUE") : Txt.parse("<rose>FALSE"));
 		msg("<k>Granted Players: %s", describeRelationParticipators(ta.getGrantedMPlayers(), msender));

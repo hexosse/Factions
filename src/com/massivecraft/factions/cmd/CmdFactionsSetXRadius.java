@@ -1,9 +1,9 @@
 package com.massivecraft.factions.cmd;
 
-import com.massivecraft.factions.cmd.arg.ARFaction;
+import com.massivecraft.factions.cmd.type.TypeFaction;
 import com.massivecraft.factions.entity.MConf;
 import com.massivecraft.massivecore.MassiveException;
-import com.massivecraft.massivecore.cmd.arg.ARInteger;
+import com.massivecraft.massivecore.command.type.primitive.TypeInteger;
 
 
 public abstract class CmdFactionsSetXRadius extends CmdFactionsSetX
@@ -17,11 +17,11 @@ public abstract class CmdFactionsSetXRadius extends CmdFactionsSetX
 		// Super
 		super(claim);
 		
-		// Args
-		this.addArg(1, ARInteger.get(), "radius");
+		// Parameters
+		this.addParameter(1, TypeInteger.get(), "radius");
 		if (claim)
 		{
-			this.addArg(ARFaction.get(), "faction", "you");
+			this.addParameter(TypeFaction.get(), "faction", "you");
 			this.setFactionArgIndex(1);
 		}
 	}
@@ -37,15 +37,13 @@ public abstract class CmdFactionsSetXRadius extends CmdFactionsSetX
 		// Radius Claim Min
 		if (radius < 1)
 		{
-			msg("<b>If you specify a radius, it must be at least 1.");
-			return null;
+			throw new MassiveException().setMsg("<b>If you specify a radius, it must be at least 1.");
 		}
 		
 		// Radius Claim Max
-		if (radius > MConf.get().setRadiusMax && ! msender.isUsingAdminMode())
+		if (radius > MConf.get().setRadiusMax && ! msender.isOverriding())
 		{
-			msg("<b>The maximum radius allowed is <h>%s<b>.", MConf.get().setRadiusMax);
-			return null;
+			throw new MassiveException().setMsg("<b>The maximum radius allowed is <h>%s<b>.", MConf.get().setRadiusMax);
 		}
 		
 		return radius;
@@ -54,7 +52,6 @@ public abstract class CmdFactionsSetXRadius extends CmdFactionsSetX
 	public Integer getRadiusZero() throws MassiveException
 	{
 		Integer ret = this.getRadius();
-		if (ret == null) return ret;
 		return ret - 1;
 	}
 	

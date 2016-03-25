@@ -42,8 +42,8 @@ public class MConf extends Entity<MConf>
 		
 		if (!Factions.get().isDatabaseInitialized()) return this;
 		
-		EngineChat.get().deactivate();
-		EngineChat.get().activate();
+		EngineChat.get().setActive(false);
+		EngineChat.get().setActive(true);
 		
 		return this;
 	}
@@ -146,7 +146,7 @@ public class MConf extends Entity<MConf>
 	
 	// How many ticks should we delay the faction message of the day with?
 	// -1 means we don't delay at all. We display it at once.
-	// 0 means it's deferred to the upcomming server tick.
+	// 0 means it's deferred to the upcoming server tick.
 	// 5 means we delay it yet another 5 ticks.
 	public int motdDelayTicks = -1;
 
@@ -236,6 +236,12 @@ public class MConf extends Entity<MConf>
 	public int claimedLandsMax = 0;
 	
 	// -------------------------------------------- //
+	// PROTECTION
+	// -------------------------------------------- //
+	
+	public boolean protectionLiquidFlowEnabled = true;
+	
+	// -------------------------------------------- //
 	// HOMES
 	// -------------------------------------------- //
 	
@@ -270,13 +276,13 @@ public class MConf extends Entity<MConf>
 	// TERRITORY INFO
 	// -------------------------------------------- //
 	
-	public boolean territoryInfoUseScreen = true;
+	public boolean territoryInfoTitlesDefault = true;
 
-	public String territoryInfoScreenMaintitle = "{relcolor}{name}";
-	public String territoryInfoScreenSubtitle = "<i>{desc}";
-	public int territoryInfoScreenTicksIn = 5;
-	public int territoryInfoScreenTicksStay = 60;
-	public int territoryInfoScreenTicksOut = 5;
+	public String territoryInfoTitlesMain = "{relcolor}{name}";
+	public String territoryInfoTitlesSub = "<i>{desc}";
+	public int territoryInfoTitlesTicksIn = 5;
+	public int territoryInfoTitlesTicksStay = 60;
+	public int territoryInfoTitleTicksOut = 5;
 
 	public String territoryInfoChat = "<i> ~ {relcolor}{name} <i>{desc}";
 	
@@ -441,6 +447,7 @@ public class MConf extends Entity<MConf>
 	public boolean handleExploitObsidianGenerators = true;
 	public boolean handleExploitEnderPearlClipping = true;
 	public boolean handleExploitTNTWaterlog = false;
+	public boolean handleNetherPortalTrap = true;
 	
 	// -------------------------------------------- //
 	// SEE CHUNK
@@ -460,6 +467,13 @@ public class MConf extends Entity<MConf>
 	public int seeChunkParticleAmount = 30;
 	public float seeChunkParticleOffsetY = 2;
 	public float seeChunkParticleDeltaY = 2;
+	
+	// -------------------------------------------- //
+	// UNSTUCK
+	// -------------------------------------------- //
+	
+	public int unstuckSeconds = 30;
+	public int unstuckChunkRadius = 10; 
 	
 	// -------------------------------------------- //
 	// LOGGING
@@ -589,6 +603,19 @@ public class MConf extends Entity<MConf>
 		"ZOMBIE" // Minecraft 1.?
 	);
 	
+	// List of entities considered to be animals.
+	public BackstringEnumSet<EntityType> entityTypesAnimals = new BackstringEnumSet<EntityType>(EntityType.class,
+		"CHICKEN", // Minecraft 1.?
+		"COW", // Minecraft 1.?
+		"HORSE", // Minecraft 1.?
+		"MUSHROOM_COW", // Minecraft 1.?
+		"OCELOT", // Minecraft 1.?
+		"PIG", // Minecraft 1.?
+		"RABBIT", // Minecraft 1.?
+		"SHEEP", // Minecraft 1.?
+		"SQUID" // Minecraft 1.?
+	);
+	
 	// -------------------------------------------- //
 	// INTEGRATION: HeroChat
 	// -------------------------------------------- //
@@ -643,6 +670,17 @@ public class MConf extends Entity<MConf>
 		EventFactionsChunkChangeType.CONQUER, false, // when claiming from another player faction
 		EventFactionsChunkChangeType.PILLAGE, false // when unclaiming (to wilderness) from another player faction
 	);
+	
+	// -------------------------------------------- //
+	// INTEGRATION: WorldGuard
+	// -------------------------------------------- //
+	
+	// Global WorldGuard Integration Switch
+	public boolean worldguardCheckEnabled = false;
+	
+	// Enable the WorldGuard check per-world 
+	// Specify which worlds the WorldGuard Check can be used in
+	public WorldExceptionSet worldguardCheckWorldsEnabled = new WorldExceptionSet();
 	
 	// -------------------------------------------- //
 	// INTEGRATION: ECONOMY

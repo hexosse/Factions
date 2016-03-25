@@ -5,12 +5,18 @@ import java.util.List;
 import com.massivecraft.factions.Factions;
 import com.massivecraft.factions.Perm;
 import com.massivecraft.factions.entity.MConf;
-import com.massivecraft.massivecore.cmd.DeprecatedCommand;
-import com.massivecraft.massivecore.cmd.HelpCommand;
-import com.massivecraft.massivecore.cmd.VersionCommand;
+import com.massivecraft.massivecore.command.MassiveCommandDeprecated;
+import com.massivecraft.massivecore.command.MassiveCommandVersion;
 
 public class CmdFactions extends FactionsCommand
 {
+	// -------------------------------------------- //
+	// INSTANCE
+	// -------------------------------------------- //
+	
+	private static CmdFactions i = new CmdFactions();
+	public static CmdFactions get() { return i; }
+	
 	// -------------------------------------------- //
 	// FIELDS
 	// -------------------------------------------- //
@@ -33,30 +39,35 @@ public class CmdFactions extends FactionsCommand
 	public CmdFactionsTitle cmdFactionsTitle = new CmdFactionsTitle();
 	public CmdFactionsRank cmdFactionsRank = new CmdFactionsRank();
 	public CmdFactionsRankOld cmdFactionsRankOldLeader = new CmdFactionsRankOld("leader");
+	public CmdFactionsRankOld cmdFactionsRankOldOwner = new CmdFactionsRankOld("owner");
 	public CmdFactionsRankOld cmdFactionsRankOldOfficer = new CmdFactionsRankOld("officer");
+	public CmdFactionsRankOld cmdFactionsRankOldModerator = new CmdFactionsRankOld("moderator");
 	public CmdFactionsRankOld cmdFactionsRankOldPromote = new CmdFactionsRankOld("promote");
 	public CmdFactionsRankOld cmdFactionsRankOldDemote = new CmdFactionsRankOld("demote");
 	public CmdFactionsMoney cmdFactionsMoney = new CmdFactionsMoney();
 	public CmdFactionsSeeChunk cmdFactionsSeeChunk = new CmdFactionsSeeChunk();
 	public CmdFactionsSeeChunkOld cmdFactionsSeeChunkOld = new CmdFactionsSeeChunkOld();
+	public CmdFactionsTerritorytitles cmdFactionsTerritorytitles = new CmdFactionsTerritorytitles();
 	public CmdFactionsStatus cmdFactionsStatus = new CmdFactionsStatus();
 	public CmdFactionsClaim cmdFactionsClaim = new CmdFactionsClaim();
 	public CmdFactionsUnclaim cmdFactionsUnclaim = new CmdFactionsUnclaim();
 	public CmdFactionsAccess cmdFactionsAccess = new CmdFactionsAccess();
-	public CmdFactionsRelationAlly cmdFactionsRelationAlly = new CmdFactionsRelationAlly();
-	public CmdFactionsRelationTruce cmdFactionsRelationTruce = new CmdFactionsRelationTruce();
-	public CmdFactionsRelationNeutral cmdFactionsRelationNeutral = new CmdFactionsRelationNeutral();
-	public CmdFactionsRelationEnemy cmdFactionsRelationEnemy = new CmdFactionsRelationEnemy();
+	public CmdFactionsRelation cmdFactionsRelation = new CmdFactionsRelation();
+	public CmdFactionsRelationOld cmdFactionsRelationOldAlly = new CmdFactionsRelationOld("ally");
+	public CmdFactionsRelationOld cmdFactionsRelationOldTruce = new CmdFactionsRelationOld("truce");
+	public CmdFactionsRelationOld cmdFactionsRelationOldNeutral = new CmdFactionsRelationOld("neutral");
+	public CmdFactionsRelationOld cmdFactionsRelationOldEnemy = new CmdFactionsRelationOld("enemy");
 	public CmdFactionsPerm cmdFactionsPerm = new CmdFactionsPerm();
 	public CmdFactionsFlag cmdFactionsFlag = new CmdFactionsFlag();
+	public CmdFactionsUnstuck cmdFactionsUnstuck = new CmdFactionsUnstuck();
 	public CmdFactionsExpansions cmdFactionsExpansions = new CmdFactionsExpansions();
 	public CmdFactionsXPlaceholder cmdFactionsTax = new CmdFactionsXPlaceholder("FactionsTax", "tax");
 	public CmdFactionsXPlaceholder cmdFactionsDynmap = new CmdFactionsXPlaceholder("FactionsDynmap", "dynmap");
-	public CmdFactionsAdmin cmdFactionsAdmin = new CmdFactionsAdmin();
+	public CmdFactionsOverride cmdFactionsOverride = new CmdFactionsOverride();
 	public CmdFactionsDisband cmdFactionsDisband = new CmdFactionsDisband();
 	public CmdFactionsPowerBoost cmdFactionsPowerBoost = new CmdFactionsPowerBoost();
 	public CmdFactionsSetpower cmdFactionsSetpower = new CmdFactionsSetpower();
-	public VersionCommand cmdFactionsVersion = new VersionCommand(Factions.get(), Perm.VERSION.node, "v", "version");
+	public MassiveCommandVersion cmdFactionsVersion = new MassiveCommandVersion(Factions.get(), Perm.VERSION.node, "v", "version");
 	
 	// -------------------------------------------- //
 	// CONSTRUCT
@@ -64,56 +75,60 @@ public class CmdFactions extends FactionsCommand
 	
 	public CmdFactions()
 	{
-		// SubCommands
-		this.addSubCommand(HelpCommand.get());
-		this.addSubCommand(this.cmdFactionsList);
-		this.addSubCommand(this.cmdFactionsFaction);
-		this.addSubCommand(this.cmdFactionsPlayer);
-		this.addSubCommand(this.cmdFactionsStatus);
-		this.addSubCommand(this.cmdFactionsJoin);
-		this.addSubCommand(this.cmdFactionsLeave);
-		this.addSubCommand(this.cmdFactionsHome);
-		this.addSubCommand(this.cmdFactionsMap);
-		this.addSubCommand(this.cmdFactionsCreate);
-		this.addSubCommand(this.cmdFactionsName);
-		this.addSubCommand(this.cmdFactionsDescription);
-		this.addSubCommand(this.cmdFactionsMotd);
-		this.addSubCommand(this.cmdFactionsSethome);
-		this.addSubCommand(this.cmdFactionsUnsethome);
-		this.addSubCommand(this.cmdFactionsInvite);
-		this.addSubCommand(this.cmdFactionsKick);
-		this.addSubCommand(this.cmdFactionsTitle);
-		this.addSubCommand(this.cmdFactionsRank);
-		this.addSubCommand(this.cmdFactionsRankOldLeader);
-		this.addSubCommand(this.cmdFactionsRankOldOfficer);
-		this.addSubCommand(this.cmdFactionsRankOldPromote);
-		this.addSubCommand(this.cmdFactionsRankOldDemote);
-		this.addSubCommand(this.cmdFactionsMoney);
-		this.addSubCommand(this.cmdFactionsSeeChunk);
-		this.addSubCommand(this.cmdFactionsSeeChunkOld);
-		this.addSubCommand(this.cmdFactionsClaim);
-		this.addSubCommand(this.cmdFactionsUnclaim);
-		this.addSubCommand(this.cmdFactionsAccess);
-		this.addSubCommand(this.cmdFactionsRelationAlly);
-		this.addSubCommand(this.cmdFactionsRelationTruce);
-		this.addSubCommand(this.cmdFactionsRelationNeutral);
-		this.addSubCommand(this.cmdFactionsRelationEnemy);
-		this.addSubCommand(this.cmdFactionsPerm);
-		this.addSubCommand(this.cmdFactionsFlag);
-		this.addSubCommand(this.cmdFactionsExpansions);
-		this.addSubCommand(this.cmdFactionsTax);
-		this.addSubCommand(this.cmdFactionsDynmap);
-		this.addSubCommand(this.cmdFactionsAdmin);
-		this.addSubCommand(this.cmdFactionsDisband);
-		this.addSubCommand(this.cmdFactionsPowerBoost);
-		this.addSubCommand(this.cmdFactionsSetpower);
-		this.addSubCommand(this.cmdFactionsVersion);
+		// Children
+		this.addChild(this.cmdFactionsList);
+		this.addChild(this.cmdFactionsFaction);
+		this.addChild(this.cmdFactionsPlayer);
+		this.addChild(this.cmdFactionsStatus);
+		this.addChild(this.cmdFactionsJoin);
+		this.addChild(this.cmdFactionsLeave);
+		this.addChild(this.cmdFactionsHome);
+		this.addChild(this.cmdFactionsMap);
+		this.addChild(this.cmdFactionsCreate);
+		this.addChild(this.cmdFactionsName);
+		this.addChild(this.cmdFactionsDescription);
+		this.addChild(this.cmdFactionsMotd);
+		this.addChild(this.cmdFactionsSethome);
+		this.addChild(this.cmdFactionsUnsethome);
+		this.addChild(this.cmdFactionsInvite);
+		this.addChild(this.cmdFactionsKick);
+		this.addChild(this.cmdFactionsTitle);
+		this.addChild(this.cmdFactionsRank);
+		this.addChild(this.cmdFactionsRankOldLeader);
+		this.addChild(this.cmdFactionsRankOldOwner);
+		this.addChild(this.cmdFactionsRankOldOfficer);
+		this.addChild(this.cmdFactionsRankOldModerator);
+		this.addChild(this.cmdFactionsRankOldPromote);
+		this.addChild(this.cmdFactionsRankOldDemote);
+		this.addChild(this.cmdFactionsMoney);
+		this.addChild(this.cmdFactionsSeeChunk);
+		this.addChild(this.cmdFactionsSeeChunkOld);
+		this.addChild(this.cmdFactionsTerritorytitles);
+		this.addChild(this.cmdFactionsClaim);
+		this.addChild(this.cmdFactionsUnclaim);
+		this.addChild(this.cmdFactionsAccess);
+		this.addChild(this.cmdFactionsRelation);
+		this.addChild(this.cmdFactionsRelationOldAlly);
+		this.addChild(this.cmdFactionsRelationOldTruce);
+		this.addChild(this.cmdFactionsRelationOldNeutral);
+		this.addChild(this.cmdFactionsRelationOldEnemy);
+		this.addChild(this.cmdFactionsPerm);
+		this.addChild(this.cmdFactionsFlag);
+		this.addChild(this.cmdFactionsUnstuck);
+		this.addChild(this.cmdFactionsExpansions);
+		this.addChild(this.cmdFactionsTax);
+		this.addChild(this.cmdFactionsDynmap);
+		this.addChild(this.cmdFactionsOverride);
+		this.addChild(this.cmdFactionsDisband);
+		this.addChild(this.cmdFactionsPowerBoost);
+		this.addChild(this.cmdFactionsSetpower);
+		this.addChild(this.cmdFactionsVersion);
 		
 		// Deprecated Commands
-		this.addSubCommand(new DeprecatedCommand(this.cmdFactionsClaim.cmdFactionsClaimAuto, "autoclaim"));
-		this.addSubCommand(new DeprecatedCommand(this.cmdFactionsUnclaim.cmdFactionsUnclaimAll, "unclaimall"));
-		this.addSubCommand(new DeprecatedCommand(this.cmdFactionsFlag, "open"));
-		this.addSubCommand(new DeprecatedCommand(this.cmdFactionsFaction, "show", "who"));
+		this.addChild(new MassiveCommandDeprecated(this.cmdFactionsClaim.cmdFactionsClaimAuto, "autoclaim"));
+		this.addChild(new MassiveCommandDeprecated(this.cmdFactionsUnclaim.cmdFactionsUnclaimAll, "unclaimall"));
+		this.addChild(new MassiveCommandDeprecated(this.cmdFactionsFlag, "open"));
+		this.addChild(new MassiveCommandDeprecated(this.cmdFactionsFaction, "show", "who"));
 	}
 	
 	// -------------------------------------------- //

@@ -1,9 +1,8 @@
 package com.massivecraft.factions.cmd;
 
-import com.massivecraft.factions.Factions;
-import com.massivecraft.factions.cmd.arg.ARFaction;
-import com.massivecraft.factions.cmd.arg.ARMPlayer;
-import com.massivecraft.massivecore.cmd.VisibilityMode;
+import com.massivecraft.factions.cmd.type.TypeFaction;
+import com.massivecraft.factions.cmd.type.TypeMPlayer;
+import com.massivecraft.massivecore.command.Visibility;
 import com.massivecraft.massivecore.util.MUtil;
 
 public class CmdFactionsRankOld extends FactionsCommand
@@ -26,12 +25,12 @@ public class CmdFactionsRankOld extends FactionsCommand
 		// Aliases
 		this.addAliases(rankName);
 	
-		// Args
-		this.addArg(ARMPlayer.get(), "player");
-		this.addArg(ARFaction.get(), "faction", "their");
+		// Parameters
+		this.addParameter(TypeMPlayer.get(), "player");
+		this.addParameter(TypeFaction.get(), "faction", "their");
 		
-		// VisibilityMode
-		this.setVisibilityMode(VisibilityMode.INVISIBLE);
+		// Visibility
+		this.setVisibility(Visibility.INVISIBLE);
 	}
 	
 	// -------------------------------------------- //
@@ -41,7 +40,11 @@ public class CmdFactionsRankOld extends FactionsCommand
 	@Override
 	public void perform()
 	{
-		Factions.get().getOuterCmdFactions().cmdFactionsRank.execute(sender, MUtil.list(this.argAt(0), this.rankName, this.argAt(1)));
+		CmdFactions.get().cmdFactionsRank.execute(sender, MUtil.list(
+			this.argAt(0),
+			this.rankName,
+			this.argAt(1)
+		));
 	}
 	
 }

@@ -1,10 +1,10 @@
 package com.massivecraft.factions.entity;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -29,7 +29,9 @@ public class BoardColl extends Coll<Board> implements BoardInterface
 	public static BoardColl get() { return i; }
 	private BoardColl()
 	{
-		super(Const.COLLECTION_BOARD, Board.class, MStore.getDb(), Factions.get(), true, true);
+		super(Const.COLLECTION_BOARD, Board.class, MStore.getDb(), Factions.get());
+		this.setCreative(true);
+		this.setLowercasing(true);
 	}
 
 	// -------------------------------------------- //
@@ -51,7 +53,7 @@ public class BoardColl extends Coll<Board> implements BoardInterface
 	{
 		if (oid == null) return null;
 		if (oid instanceof String) return (String)oid;
-		if (oid instanceof Board) return this.getId(oid);
+		if (oid instanceof Board) return ((Board)oid).getId();
 		
 		return MUtil.extract(String.class, "worldName", oid);
 	}
@@ -281,7 +283,7 @@ public class BoardColl extends Coll<Board> implements BoardInterface
 	// MAP GENERATION
 	
 	@Override
-	public ArrayList<String> getMap(RelationParticipator observer, PS centerPs, double inDegrees, int width, int height)
+	public List<Object> getMap(RelationParticipator observer, PS centerPs, double inDegrees, int width, int height)
 	{
 		if (centerPs == null) return null;
 		Board board = this.get(centerPs.getWorld());

@@ -1,7 +1,7 @@
 package com.massivecraft.factions.cmd;
 
 import com.massivecraft.factions.Perm;
-import com.massivecraft.massivecore.cmd.req.ReqHasPerm;
+import com.massivecraft.massivecore.command.requirement.RequirementHasPerm;
 
 public class CmdFactionsInvite extends FactionsCommand
 {
@@ -20,16 +20,16 @@ public class CmdFactionsInvite extends FactionsCommand
 	public CmdFactionsInvite()
 	{
 		// Aliases
-		this.addAliases("i", "inv", "invite");
+		this.addAliases("invite");
 		
-		// Add SubCommands
-		this.addSubCommand(this.cmdFactionsInviteAdd);
-		this.addSubCommand(this.cmdFactionsInviteRemove);
-		this.addSubCommand(this.cmdFactionsInviteList);
+		// Children
+		this.addChild(this.cmdFactionsInviteAdd);
+		this.addChild(this.cmdFactionsInviteRemove);
+		this.addChild(this.cmdFactionsInviteList);
 
 
 		// Requirements
-		this.addRequirements(ReqHasPerm.get(Perm.INVITE.node));
+		this.addRequirements(RequirementHasPerm.get(Perm.INVITE.node));
 	}
 	
 }

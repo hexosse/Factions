@@ -1,16 +1,16 @@
 package com.massivecraft.factions.cmd;
 
 import com.massivecraft.factions.Perm;
-import com.massivecraft.factions.cmd.arg.ARFaction;
 import com.massivecraft.factions.cmd.req.ReqBankCommandsEnabled;
+import com.massivecraft.factions.cmd.type.TypeFaction;
 import com.massivecraft.factions.entity.MPlayer;
 import com.massivecraft.factions.entity.Faction;
 import com.massivecraft.factions.entity.MConf;
 import com.massivecraft.factions.Factions;
 import com.massivecraft.factions.integration.Econ;
 import com.massivecraft.massivecore.MassiveException;
-import com.massivecraft.massivecore.cmd.arg.ARDouble;
-import com.massivecraft.massivecore.cmd.req.ReqHasPerm;
+import com.massivecraft.massivecore.command.requirement.RequirementHasPerm;
+import com.massivecraft.massivecore.command.type.primitive.TypeDouble;
 import com.massivecraft.massivecore.money.Money;
 import com.massivecraft.massivecore.util.Txt;
 
@@ -26,14 +26,14 @@ public class CmdFactionsMoneyWithdraw extends FactionsCommand
 	public CmdFactionsMoneyWithdraw()
 	{
 		// Aliases
-		this.addAliases("w", "withdraw");
+		this.addAliases("withdraw");
 
-		// Args
-		this.addArg(ARDouble.get(), "amount");
-		this.addArg(ARFaction.get(), "faction", "you");
+		// Parameters
+		this.addParameter(TypeDouble.get(), "amount");
+		this.addParameter(TypeFaction.get(), "faction", "you");
 
 		// Requirements
-		this.addRequirements(ReqHasPerm.get(Perm.MONEY_WITHDRAW.node));
+		this.addRequirements(RequirementHasPerm.get(Perm.MONEY_WITHDRAW.node));
 		this.addRequirements(ReqBankCommandsEnabled.get());
 	}
 

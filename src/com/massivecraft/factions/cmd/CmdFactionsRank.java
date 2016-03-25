@@ -6,9 +6,9 @@ import java.util.Set;
 import com.massivecraft.factions.Factions;
 import com.massivecraft.factions.Perm;
 import com.massivecraft.factions.Rel;
-import com.massivecraft.factions.cmd.arg.ARFaction;
-import com.massivecraft.factions.cmd.arg.ARMPlayer;
-import com.massivecraft.factions.cmd.arg.ARRank;
+import com.massivecraft.factions.cmd.type.TypeFaction;
+import com.massivecraft.factions.cmd.type.TypeMPlayer;
+import com.massivecraft.factions.cmd.type.TypeRank;
 import com.massivecraft.factions.entity.Faction;
 import com.massivecraft.factions.entity.MConf;
 import com.massivecraft.factions.entity.MFlag;
@@ -18,7 +18,7 @@ import com.massivecraft.factions.event.EventFactionsMembershipChange;
 import com.massivecraft.factions.event.EventFactionsMembershipChange.MembershipChangeReason;
 import com.massivecraft.factions.event.EventFactionsRankChange;
 import com.massivecraft.massivecore.MassiveException;
-import com.massivecraft.massivecore.cmd.req.ReqHasPerm;
+import com.massivecraft.massivecore.command.requirement.RequirementHasPerm;
 import com.massivecraft.massivecore.util.Txt;
 
 public class CmdFactionsRank extends FactionsCommand
@@ -48,9 +48,6 @@ public class CmdFactionsRank extends FactionsCommand
 	private Rel targetRank = null;
 	private Rel rank = null;
 	
-	// This one is permanent
-	private ARRank rankReader = new ARRank();
-	
 	// -------------------------------------------- //
 	// CONSTRUCT
 	// -------------------------------------------- //
@@ -60,13 +57,13 @@ public class CmdFactionsRank extends FactionsCommand
 		// Aliases
 		this.addAliases("rank");
 	
-		// Args
-		this.addArg(ARMPlayer.get(), "player");
-		this.addArg(rankReader, "action", "show");
-		this.addArg(ARFaction.get(), "faction", "their");
+		// Parameters
+		this.addParameter(TypeMPlayer.get(), "player");
+		this.addParameter(TypeRank.get(), "action", "show");
+		this.addParameter(TypeFaction.get(), "faction", "their");
 	
 		// Requirements
-		this.addRequirements(ReqHasPerm.get(Perm.RANK.node));
+		this.addRequirements(RequirementHasPerm.get(Perm.RANK.node));
 	}
 	
 	// -------------------------------------------- //
@@ -113,10 +110,14 @@ public class CmdFactionsRank extends FactionsCommand
 
 	// This is always run after performing a MassiveCommand.
 	@Override
-	public void unsetSenderVars()
+	public void senderFields(boolean set)
 	{
-		super.unsetSenderVars();
-		this.unregisterFields();
+		super.senderFields(set);
+		
+		if ( ! set)
+		{
+			this.unregisterFields();			
+		}
 	}
 
 	// -------------------------------------------- //
@@ -137,7 +138,7 @@ public class CmdFactionsRank extends FactionsCommand
 		// Rank if any passed.
 		if (this.argIsSet(1))
 		{
-			this.rankReader.setStartRank(targetRank);
+			this.setParameterType(1, TypeRank.get(targetRank));
 			rank = this.readArg();
 		}
 		
@@ -164,7 +165,7 @@ public class CmdFactionsRank extends FactionsCommand
 	private void ensureAllowed() throws MassiveException
 	{
 		// People with permission don't follow the normal rules.
-		if (msender.isUsingAdminMode()) return;
+		if (msender.isOverriding()) return;
 		
 		// If somone gets the leadership of wilderness (Which has happened before).
 		// We can at least try to limit their powers.
@@ -231,7 +232,7 @@ public class CmdFactionsRank extends FactionsCommand
 		// Don't change their rank to something they already are.
 		if (target.getRole() == rank)
 		{
-			throw new MassiveException().addMsg("%s <b>is already %s<b>.", target.describeTo(msender), rank.getColor() + rank.getDescPlayerOne());
+			throw new MassiveException().addMsg("%s <b>is already %s.", target.describeTo(msender), rank.getDescPlayerOne());
 		}
 	}
 	

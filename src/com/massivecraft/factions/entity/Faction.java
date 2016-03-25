@@ -1,31 +1,47 @@
 package com.massivecraft.factions.entity;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import com.massivecraft.factions.EconomyParticipator;
-import com.massivecraft.factions.FactionEqualsPredictate;
+import com.massivecraft.factions.FactionEqualsPredicate;
 import com.massivecraft.factions.Factions;
 import com.massivecraft.factions.Lang;
+import com.massivecraft.factions.PredicateRole;
 import com.massivecraft.factions.Rel;
 import com.massivecraft.factions.RelationParticipator;
-import com.massivecraft.factions.util.*;
-import com.massivecraft.massivecore.CaseInsensitiveComparator;
+import com.massivecraft.factions.util.MiscUtil;
+import com.massivecraft.factions.util.RelationUtil;
+import com.massivecraft.massivecore.Named;
+import com.massivecraft.massivecore.collections.MassiveList;
 import com.massivecraft.massivecore.collections.MassiveMapDef;
 import com.massivecraft.massivecore.collections.MassiveTreeSetDef;
+import com.massivecraft.massivecore.comparator.ComparatorCaseInsensitive;
 import com.massivecraft.massivecore.mixin.Mixin;
 import com.massivecraft.massivecore.money.Money;
+import com.massivecraft.massivecore.predicate.Predicate;
 import com.massivecraft.massivecore.ps.PS;
 import com.massivecraft.massivecore.store.Entity;
+import com.massivecraft.massivecore.store.SenderColl;
 import com.massivecraft.massivecore.util.IdUtil;
 import com.massivecraft.massivecore.util.MUtil;
 import com.massivecraft.massivecore.util.Txt;
 
-public class Faction extends Entity<Faction> implements EconomyParticipator
+public class Faction extends Entity<Faction> implements EconomyParticipator, Named
 {
 	// -------------------------------------------- //
 	// META
@@ -64,8 +80,13 @@ public class Faction extends Entity<Faction> implements EconomyParticipator
 		// We may move factions around during upgrades.
 		if (!Factions.get().isDatabaseInitialized()) return;
 		
-		// Zero balance
-		Money.set(this, null, 0);
+		// NOTE: Existence check is required for compatibility with some plugins.
+		// If they have money ...
+		if (Money.exists(this))
+		{
+			// ... remove it.
+			Money.set(this, null, 0);	
+		}
 		
 		// Clean the board
 		BoardColl.get().clean();
@@ -118,7 +139,7 @@ public class Faction extends Entity<Faction> implements EconomyParticipator
 	// This is the ids of the invited players.
 	// They are actually "senderIds" since you can invite "@console" to your faction.
 	// Null means no one is invited
-	private MassiveTreeSetDef<String, CaseInsensitiveComparator> invitedPlayerIds = new MassiveTreeSetDef<String, CaseInsensitiveComparator>(CaseInsensitiveComparator.get());
+	private MassiveTreeSetDef<String, ComparatorCaseInsensitive> invitedPlayerIds = new MassiveTreeSetDef<String, ComparatorCaseInsensitive>(ComparatorCaseInsensitive.get());
 	
 	// The keys in this map are factionIds.
 	// Null means no special relation whishes.
@@ -154,6 +175,7 @@ public class Faction extends Entity<Faction> implements EconomyParticipator
 	
 	// RAW
 	
+	@Override
 	public String getName()
 	{
 		String ret = this.name;
@@ -282,12 +304,23 @@ public class Faction extends Entity<Faction> implements EconomyParticipator
 	
 	// FINER
 	
-	public List<String> getMotdMessages()
+	public List<Object> getMotdMessages()
 	{
-		final String title = Txt.titleize(this.getName() + " - Message of the Day");
-		final String motd = "<i>" + this.getMotd();
-		final List<String> messages = Txt.parse(MUtil.list(title, motd, ""));
-		return messages;
+		// Create
+		List<Object> ret = new MassiveList<>();
+		
+		// Fill
+		Object title = this.getName() + " - Message of the Day";
+		title = Txt.titleize(title);
+		ret.add(title);
+		
+		String motd = Txt.parse("<i>" + this.getMotd());
+		ret.add(motd);
+		
+		ret.add("");
+		
+		// Return
+		return ret;
 	}
 	
 	// -------------------------------------------- //
@@ -328,6 +361,7 @@ public class Faction extends Entity<Faction> implements EconomyParticipator
 	{
 		if (this.isValidHome(this.home)) return;
 		this.home = null;
+		this.changed();
 		msg("<b>Your faction home has been un-set since it is no longer in your territory.");
 	}
 	
@@ -429,7 +463,7 @@ public class Faction extends Entity<Faction> implements EconomyParticipator
 	public void setInvitedPlayerIds(Collection<String> invitedPlayerIds)
 	{
 		// Clean input
-		MassiveTreeSetDef<String, CaseInsensitiveComparator> target = new MassiveTreeSetDef<String, CaseInsensitiveComparator>(CaseInsensitiveComparator.get());
+		MassiveTreeSetDef<String, ComparatorCaseInsensitive> target = new MassiveTreeSetDef<String, ComparatorCaseInsensitive>(ComparatorCaseInsensitive.get());
 		if (invitedPlayerIds != null)
 		{
 			for (String invitedPlayerId : invitedPlayerIds)
@@ -462,15 +496,15 @@ public class Faction extends Entity<Faction> implements EconomyParticipator
 	
 	public boolean setInvited(String playerId, boolean invited)
 	{
-		TreeSet<String> invitedPlayerIds = this.getInvitedPlayerIds();
+		List<String> invitedPlayerIds = new ArrayList<String>(this.getInvitedPlayerIds());
 		boolean ret;
 		if (invited)
 		{
-			ret = invitedPlayerIds.add(playerId.toLowerCase());
+			ret = invitedPlayerIds.add(playerId);
 		}
 		else
 		{
-			ret = invitedPlayerIds.remove(playerId.toLowerCase());
+			ret = invitedPlayerIds.remove(playerId);
 		}
 		this.setInvitedPlayerIds(invitedPlayerIds);
 		return ret;
@@ -551,32 +585,6 @@ public class Faction extends Entity<Faction> implements EconomyParticipator
 	public void setRelationWish(Faction faction, Rel rel)
 	{
 		this.setRelationWish(faction.getId(), rel);
-	}
-	
-	public Map<Rel, List<String>> getRelationNames(RelationParticipator rp, Set<Rel> rels, boolean skipPeaceful)
-	{
-		// Create Ret
-		Map<Rel, List<String>> ret = new LinkedHashMap<Rel, List<String>>();
-		for (Rel rel : rels)
-		{
-			ret.put(rel, new ArrayList<String>());
-		}
-		
-		for (Faction faction : FactionColl.get().getAll())
-		{
-			if (skipPeaceful && faction.getFlag(MFlag.getFlagPeaceful())) continue;
-			
-			Rel rel = faction.getRelationTo(this);
-			
-			List<String> names = ret.get(rel);
-			if (names == null) continue;
-			
-			String name = faction.getName(rp);
-			names.add(name);
-		}
-		
-		// Return Ret
-		return ret;
 	}
 	
 	// -------------------------------------------- //
@@ -866,17 +874,20 @@ public class Faction extends Entity<Faction> implements EconomyParticipator
 		Map<MPerm, Set<Rel>> perms = this.getPerms();
 		
 		Set<Rel> rels = perms.get(perm);
-
+		
+		boolean changed;
 		if (permitted)
 		{
-			rels.add(rel);
+			changed = rels.add(rel);
 		}
 		else
 		{
-			rels.remove(rel);
+			changed = rels.remove(rel);
 		}
 		
 		this.setPerms(perms);
+		
+		if (changed) this.changed();
 	}
 	
 	// -------------------------------------------- //
@@ -1015,7 +1026,7 @@ public class Faction extends Entity<Faction> implements EconomyParticipator
 			{
 				String msg = Txt.parse("<rose>WARN: <i>Faction <h>%s <i>aka <h>%s <i>had unattached mplayer in index:", this.getName(), this.getId());
 				Factions.get().log(msg);
-				Factions.get().log(Factions.get().gson.toJson(mplayer));
+				Factions.get().log(Factions.get().getGson().toJson(mplayer));
 				iter.remove();
 			}
 		}
@@ -1027,49 +1038,31 @@ public class Faction extends Entity<Faction> implements EconomyParticipator
 		return new ArrayList<MPlayer>(this.mplayers);
 	}
 	
-	public List<MPlayer> getMPlayersWhereOnline(boolean online)
+	public List<MPlayer> getMPlayersWhere(Predicate<? super MPlayer> predicate)
 	{
 		List<MPlayer> ret = this.getMPlayers();
-		Iterator<MPlayer> iter = ret.iterator();
-		while (iter.hasNext())
+		for (Iterator<MPlayer> it = ret.iterator(); it.hasNext();)
 		{
-			MPlayer mplayer = iter.next();
-			if (mplayer.isOnline() != online)
-			{
-				iter.remove();
-			}
-		}
-		return ret;
-	}	
-	
-	public List<MPlayer> getMPlayersWhereRole(Rel role)
-	{
-		List<MPlayer> ret = this.getMPlayers();
-		Iterator<MPlayer> iter = ret.iterator();
-		while (iter.hasNext())
-		{
-			MPlayer mplayer = iter.next();
-			if (mplayer.getRole() != role)
-			{
-				iter.remove();
-			}
+			if ( ! predicate.apply(it.next())) it.remove();
 		}
 		return ret;
 	}
 	
+	public List<MPlayer> getMPlayersWhereOnline(boolean online)
+	{
+		return this.getMPlayersWhere(online ? SenderColl.PREDICATE_ONLINE : SenderColl.PREDICATE_OFFLINE);
+	}	
+	
+	public List<MPlayer> getMPlayersWhereRole(Rel role)
+	{
+		return this.getMPlayersWhere(PredicateRole.get(role));
+	}
+	
 	public MPlayer getLeader()
 	{
-		List<MPlayer> ret = this.getMPlayers();
-		Iterator<MPlayer> iter = ret.iterator();
-		while (iter.hasNext())
-		{
-			MPlayer mplayer = iter.next();
-			if (mplayer.getRole() == Rel.LEADER)
-			{
-				return mplayer;
-			}
-		}
-		return null;
+		List<MPlayer> ret = this.getMPlayersWhereRole(Rel.LEADER);
+		if (ret.size() == 0) return null;
+		return ret.get(0);
 	}
 	
 	public List<CommandSender> getOnlineCommandSenders()
@@ -1195,6 +1188,10 @@ public class Faction extends Entity<Faction> implements EconomyParticipator
 	{
 		boolean explosions = this.getFlag(MFlag.getFlagExplosions());
 		boolean offlineexplosions = this.getFlag(MFlag.getFlagOfflineexplosions());
+
+		if (explosions && offlineexplosions) return true;
+		if ( ! explosions && ! offlineexplosions) return false;
+
 		boolean online = this.isFactionConsideredOnline();
 		
 		return (online && explosions) || (!online && offlineexplosions);
@@ -1207,36 +1204,36 @@ public class Faction extends Entity<Faction> implements EconomyParticipator
 	
 	// CONVENIENCE SEND MESSAGE
 	
-	public boolean sendMessage(String message)
+	public boolean sendMessage(Object message)
 	{
-		return Mixin.messagePredictate(new FactionEqualsPredictate(this), message);
+		return Mixin.messagePredicate(new FactionEqualsPredicate(this), message);
 	}
 	
-	public boolean sendMessage(String... messages)
+	public boolean sendMessage(Object... messages)
 	{
-		return Mixin.messagePredictate(new FactionEqualsPredictate(this), messages);
+		return Mixin.messagePredicate(new FactionEqualsPredicate(this), messages);
 	}
 	
-	public boolean sendMessage(Collection<String> messages)
+	public boolean sendMessage(Collection<Object> messages)
 	{
-		return Mixin.messagePredictate(new FactionEqualsPredictate(this), messages);
+		return Mixin.messagePredicate(new FactionEqualsPredicate(this), messages);
 	}
 	
 	// CONVENIENCE MSG
 	
 	public boolean msg(String msg)
 	{
-		return Mixin.msgPredictate(new FactionEqualsPredictate(this), msg);
+		return Mixin.msgPredicate(new FactionEqualsPredicate(this), msg);
 	}
 	
 	public boolean msg(String msg, Object... args)
 	{
-		return Mixin.msgPredictate(new FactionEqualsPredictate(this), msg, args);
+		return Mixin.msgPredicate(new FactionEqualsPredicate(this), msg, args);
 	}
 	
 	public boolean msg(Collection<String> msgs)
 	{
-		return Mixin.msgPredictate(new FactionEqualsPredictate(this), msgs);
+		return Mixin.msgPredicate(new FactionEqualsPredicate(this), msgs);
 	}
 	
 }

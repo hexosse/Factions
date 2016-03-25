@@ -1,18 +1,22 @@
 package com.massivecraft.factions.cmd;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.massivecraft.factions.Factions;
+import org.bukkit.ChatColor;
+
 import com.massivecraft.factions.Perm;
-import com.massivecraft.factions.cmd.arg.ARMPlayer;
+import com.massivecraft.factions.cmd.type.TypeMPlayer;
 import com.massivecraft.factions.entity.MPerm;
 import com.massivecraft.factions.entity.MPlayer;
 import com.massivecraft.factions.event.EventFactionsInvitedChange;
 import com.massivecraft.massivecore.MassiveException;
-import com.massivecraft.massivecore.cmd.arg.ARSet;
-import com.massivecraft.massivecore.cmd.req.ReqHasPerm;
+import com.massivecraft.massivecore.command.requirement.RequirementHasPerm;
+import com.massivecraft.massivecore.command.type.container.TypeSet;
+import com.massivecraft.massivecore.mson.Mson;
+import com.massivecraft.massivecore.util.Txt;
 
 public class CmdFactionsInviteRemove extends FactionsCommand
 {
@@ -22,13 +26,13 @@ public class CmdFactionsInviteRemove extends FactionsCommand
 	public CmdFactionsInviteRemove()
 	{
 		// Aliases
-		this.addAliases("r", "remove");
+		this.addAliases("remove");
 
-		// Args
-		this.addArg(ARSet.get(ARMPlayer.get(), true), "players/all", true);
+		// Parameters
+		this.addParameter(TypeSet.get(TypeMPlayer.get()), "players/all", true);
 		
 		// Requirements
-		this.addRequirements(ReqHasPerm.get(Perm.INVITE_REMOVE.node));
+		this.addRequirements(RequirementHasPerm.get(Perm.INVITE_REMOVE.node));
 	}
 	
 	// -------------------------------------------- //
@@ -67,8 +71,18 @@ public class CmdFactionsInviteRemove extends FactionsCommand
 			// Already member?
 			if (mplayer.getFaction() == msenderFaction)
 			{
+				// Mson
+				String command = CmdFactions.get().cmdFactionsKick.getCommandLine(mplayer.getName());
+				String tooltip = Txt.parse("Click to <c>%s<i>.", command);
+				
+				Mson kick = Mson.mson(
+					mson("You might want to kick him. ").color(ChatColor.YELLOW), 
+					mson(ChatColor.RED.toString() + tooltip).tooltip(ChatColor.YELLOW.toString() + tooltip).suggest(command)
+				);
+				
+				// Inform
 				msg("%s<i> is already a member of %s<i>.", mplayer.getName(), msenderFaction.getName());
-				msg("<i>You might want to: " + Factions.get().getOuterCmdFactions().cmdFactionsKick.getUseageTemplate(false));
+				message(kick);
 				continue;
 			}
 			
@@ -94,19 +108,44 @@ public class CmdFactionsInviteRemove extends FactionsCommand
 				
 				// Apply
 				msenderFaction.setInvited(mplayer, false);
+				
+				// If all, we do this at last. So we only do it once.
+				if (! all) msenderFaction.changed();
 			}
 			else
 			{
+				// Mson
+				String command = CmdFactions.get().cmdFactionsInvite.cmdFactionsInviteAdd.getCommandLine(mplayer.getName());
+				String tooltip = Txt.parse("Click to <c>%s<i>.", command);
+				
+				Mson invite = Mson.mson(
+					mson("You might want to invite him. ").color(ChatColor.YELLOW), 
+					mson(ChatColor.GREEN.toString() + tooltip).tooltip(ChatColor.YELLOW.toString() + tooltip).suggest(command)
+				);
+				
 				// Inform
 				msg("%s <i>is not invited to %s<i>.", mplayer.describeTo(msender, true), msenderFaction.describeTo(mplayer));
-				msg("<i>You might want to: " + Factions.get().getOuterCmdFactions().cmdFactionsInvite.cmdFactionsInviteAdd.getUseageTemplate(false));
+				message(invite);
 			}
 		}
 		
 		// Inform Faction if all
 		if (all)
 		{
-			msenderFaction.msg("%s<i> revoked all <h>%s <i>pending invitations from your faction.", msender.describeTo(msenderFaction), mplayers.size());
+			List<String> names = new ArrayList<String>();
+			for (MPlayer mplayer : mplayers)
+			{
+				names.add(mplayer.describeTo(msender, true));
+			}
+			
+			Mson factionsRevokeAll = mson(
+				Mson.parse("%s<i> revoked ", msender.describeTo(msenderFaction)),
+				Mson.parse("<i>all <h>%s <i>pending invitations", mplayers.size()).tooltip(names),
+				mson(" from your faction.").color(ChatColor.YELLOW)
+			);
+			
+			msenderFaction.sendMessage(factionsRevokeAll);
+			msenderFaction.changed();
 		}
 	}
 	

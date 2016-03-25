@@ -7,15 +7,15 @@ import java.util.List;
 
 import com.massivecraft.factions.Perm;
 import com.massivecraft.factions.PlayerInactivityComparator;
-import com.massivecraft.factions.cmd.arg.ARFaction;
-import com.massivecraft.factions.cmd.arg.ARSortMPlayer;
+import com.massivecraft.factions.cmd.type.TypeFaction;
+import com.massivecraft.factions.cmd.type.TypeSortMPlayer;
 import com.massivecraft.factions.entity.Faction;
 import com.massivecraft.factions.entity.MPerm;
 import com.massivecraft.factions.entity.MPlayer;
 import com.massivecraft.massivecore.MassiveException;
-import com.massivecraft.massivecore.cmd.ArgSetting;
-import com.massivecraft.massivecore.cmd.req.ReqHasPerm;
-import com.massivecraft.massivecore.pager.PagerSimple;
+import com.massivecraft.massivecore.command.Parameter;
+import com.massivecraft.massivecore.command.requirement.RequirementHasPerm;
+import com.massivecraft.massivecore.pager.Pager;
 import com.massivecraft.massivecore.pager.Stringifier;
 import com.massivecraft.massivecore.util.TimeDiffUtil;
 import com.massivecraft.massivecore.util.TimeUnit;
@@ -33,13 +33,13 @@ public class CmdFactionsStatus extends FactionsCommand
 		// Aliases
 		this.addAliases("s", "status");
 
-		// Args
-		this.addArg(ArgSetting.getPage());
-		this.addArg(ARFaction.get(), "faction", "you");
-		this.addArg(ARSortMPlayer.get(), "sort by", "time");
+		// Parameters
+		this.addParameter(Parameter.getPage());
+		this.addParameter(TypeFaction.get(), "faction", "you");
+		this.addParameter(TypeSortMPlayer.get(), "sort", "time");
 
 		// Requirements
-		this.addRequirements(ReqHasPerm.get(Perm.STATUS.node));
+		this.addRequirements(RequirementHasPerm.get(Perm.STATUS.node));
 	}
 
 	// -------------------------------------------- //
@@ -61,13 +61,9 @@ public class CmdFactionsStatus extends FactionsCommand
 		final List<MPlayer> mplayers = faction.getMPlayers();
 		Collections.sort(mplayers, sortedBy);
 		
-		// Create Pager
-		final PagerSimple<MPlayer> pager = new PagerSimple<MPlayer>(mplayers, sender);
-		String pagerTitle = Txt.parse("<i>Status of %s<i>.", faction.describeTo(msender, true));
-		
-		// Use Pager
-		List<String> messages = pager.getPageTxt(page, pagerTitle, new Stringifier<MPlayer>(){
-			
+		// Pager Create
+		String title = Txt.parse("<i>Status of %s<i>.", faction.describeTo(msender, true));
+		final Pager<MPlayer> pager = new Pager<MPlayer>(this, title, page, mplayers, new Stringifier<MPlayer>(){
 			@Override
 			public String toString(MPlayer mplayer, int index)
 			{
@@ -105,15 +101,15 @@ public class CmdFactionsStatus extends FactionsCommand
 				// Time
 				long lastActiveMillis = mplayer.getLastActivityMillis() - System.currentTimeMillis();
 				LinkedHashMap<TimeUnit, Long> activeTimes = TimeDiffUtil.limit(TimeDiffUtil.unitcounts(lastActiveMillis, TimeUnit.getAllButMillis()), 3);
-				String lastActive = mplayer.isOnline() ? Txt.parse("<lime>Online right now.") : Txt.parse("<i>Last active: " + TimeDiffUtil.formatedMinimal(activeTimes, "<i>"));
+				String lastActive = mplayer.isOnline(msender) ? Txt.parse("<lime>Online right now.") : Txt.parse("<i>Last active: " + TimeDiffUtil.formatedMinimal(activeTimes, "<i>"));
 				
 				return Txt.parse("%s%s %s %s", displayName, whiteSpace, power, lastActive);
 			}
-
 		});
 		
-		// Send message
-		sendMessage(messages);
+		
+		// Pager Message
+		pager.message();
 	}
 	
 }
